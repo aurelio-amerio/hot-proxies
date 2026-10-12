@@ -1,0 +1,18 @@
+// All values in printer dots.
+export const MARGIN = 8        // outer margin inside the card edge
+export const FRAME = 3         // card border stroke
+export const GAP = 4           // vertical gap between bars
+export const NAME_H = 34
+export const TYPE_H = 28
+export const TEXT_PAD = 6      // padding inside the text box
+export const STAT_H = 32       // P/T or loyalty box height
+export const STAT_PAD = 10     // horizontal padding inside the stat box
+export const ART_MAX = 250
+export const ART_MID = 180
+export const ART_MIN = 100
+export const ART_STEP = 10
+export const TEXT_MIN = 14     // readability floor before art shrinks below ART_MID
+export const TEXT_FLOOR = 11   // absolute floor; below this we clip
+export const NAME_MIN = 14
+export const COST_SYMBOL = 18  // symbol size in the name bar
+export const LINE_HEIGHT_RATIO = 1.22
