@@ -158,3 +158,4 @@ node_modules/
 dist/
 dev-dist/
 src/assets/fonts/local/
+tests/golden/__diff__/
