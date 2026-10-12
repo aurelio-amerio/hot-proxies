@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import Drawer from '@mui/material/Drawer'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -18,6 +19,22 @@ function Range({ label, value, range, step, onChange }: { label: string; value: 
       <Typography variant="caption">{label}: {value}</Typography>
       <Slider size="small" min={range[0]} max={range[1]} step={step} value={value} onChange={(_e, v) => onChange(v as number)} />
     </Stack>
+  )
+}
+
+/** Number input that keeps the raw text while typing and commits on blur or Enter, so clamping never fights the keyboard. */
+function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit(v: number): void }) {
+  const [text, setText] = useState(String(value))
+  useEffect(() => setText(String(value)), [value])
+  const commit = () => {
+    const n = Number(text)
+    if (text.trim() === '' || !Number.isFinite(n)) setText(String(value))
+    else { onCommit(n); setText(String(value)) }
+  }
+  return (
+    <TextField size="small" type="number" label={label} value={text}
+      onChange={(e) => setText(e.target.value)} onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') commit() }} />
   )
 }
 
@@ -45,8 +62,8 @@ export function SettingsDrawer({ open, onClose, settings: s, update, reset }: Se
         </TextField>
         <Divider />
         <Typography variant="overline">Printer</Typography>
-        <TextField size="small" type="number" label="Dots per line" value={s.dotsPerLine} onChange={(e) => update({ dotsPerLine: Number(e.target.value) })} />
-        <TextField size="small" type="number" label="DPI" value={s.dpi} onChange={(e) => update({ dpi: Number(e.target.value) })} />
+        <NumberField label="Dots per line" value={s.dotsPerLine} onCommit={(v) => update({ dotsPerLine: v })} />
+        <NumberField label="DPI" value={s.dpi} onCommit={(v) => update({ dpi: v })} />
         <Button onClick={reset}>Reset to defaults</Button>
       </Stack>
     </Drawer>
