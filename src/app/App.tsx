@@ -3,6 +3,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
+import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Container from '@mui/material/Container'
@@ -11,6 +12,7 @@ import Alert from '@mui/material/Alert'
 import LinearProgress from '@mui/material/LinearProgress'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { theme } from './theme'
+import headerImg from '../assets/header.jpg'
 import type { Services } from './services'
 import { useSettings } from './useSettings'
 import { useProxy } from './useProxy'
@@ -31,6 +33,7 @@ export function App({ services }: { services: Services }) {
       </Toolbar></AppBar>
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <Box component="img" src={headerImg} alt="Hot Proxies!" sx={{ display: 'block', width: '100%', height: 'auto' }} />
           <SearchBox loadNames={services.loadNames} onPick={render} />
           {state === 'loading' && <LinearProgress />}
           {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}

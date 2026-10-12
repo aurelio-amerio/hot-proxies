@@ -12,7 +12,7 @@ export interface PreviewProps { bits: BitImage; cardName: string; dotsPerLine: n
 
 export function Preview({ bits, cardName, dotsPerLine, dpi }: PreviewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
-  const [zoom, setZoom] = useState<'1' | '2' | 'physical'>('2')
+  const [zoom, setZoom] = useState<'1' | '2' | 'physical'>('1')
   useEffect(() => {
     const c = ref.current; if (!c) return
     c.width = bits.width; c.height = bits.height
