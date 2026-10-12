@@ -39,8 +39,12 @@ export function paint(card: CardData, g: Geometry, artBits: BitImage | null, s: 
 
   // type bar
   strokeRect(ctx, g.typeBar, 2)
-  ctx.fillStyle = '#000'; ctx.font = `bold 18px ${family}`
+  ctx.fillStyle = '#000'; ctx.font = `bold ${g.typeFontSize}px ${family}`
+  ctx.save()
+  ctx.beginPath(); ctx.moveTo(g.typeBar.x + 2, g.typeBar.y); ctx.lineTo(g.typeBar.x + g.typeBar.w - 4, g.typeBar.y)
+  ctx.lineTo(g.typeBar.x + g.typeBar.w - 4, g.typeBar.y + g.typeBar.h); ctx.lineTo(g.typeBar.x + 2, g.typeBar.y + g.typeBar.h); ctx.closePath(); ctx.clip()
   ctx.fillText(card.typeLine, g.typeBar.x + 8, g.typeBar.y + Math.round(g.typeBar.h * 0.7))
+  ctx.restore()
 
   // text box
   strokeRect(ctx, g.textBox, 2)

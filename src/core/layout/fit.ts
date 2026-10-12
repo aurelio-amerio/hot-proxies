@@ -6,13 +6,13 @@ import { tokenize } from '../text/tokenize'
 import { wrapText, type Line } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { fitCandidates } from './candidates'
-import { MARGIN, GAP, NAME_H, TYPE_H, TEXT_PAD, STAT_H, STAT_PAD, COST_SYMBOL, NAME_MIN, LINE_HEIGHT_RATIO } from './constants'
+import { MARGIN, GAP, NAME_H, TYPE_H, TEXT_PAD, STAT_H, STAT_PAD, COST_SYMBOL, NAME_MIN, TYPE_SIZE, TYPE_MIN, LINE_HEIGHT_RATIO } from './constants'
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Geometry {
   card: { w: number; h: number }
   nameBar: Rect; nameFontSize: number; costOnSecondLine: boolean; costSymbolSize: number
-  art: Rect; typeBar: Rect
+  art: Rect; typeBar: Rect; typeFontSize: number
   textBox: Rect; textFontSize: number; lineHeight: number; symbolSize: number; textLines: Line[]
   statBox?: Rect
   overflow: boolean; strippedReminder: boolean
@@ -51,6 +51,12 @@ export function fit(card: CardData, s: Settings, env: RenderEnv): Geometry {
 
   // --- art + text share the rest ---
   const typeBarH = TYPE_H
+  // --- type line: shrink until it fits inside the bar's 8-dot side padding ---
+  let typeFontSize = TYPE_SIZE
+  for (; typeFontSize > TYPE_MIN; typeFontSize--) {
+    ctx.font = `bold ${typeFontSize}px ${family}`
+    if (ctx.measureText(card.typeLine).width <= innerW - 16) break
+  }
   const fixedTop = nameBar.y + nameBar.h + GAP
   const available = H - MARGIN - fixedTop - GAP - typeBarH - GAP   // art + text box
   const textInnerW = innerW - 2 * TEXT_PAD
@@ -81,7 +87,7 @@ export function fit(card: CardData, s: Settings, env: RenderEnv): Geometry {
   return {
     card: { w: W, h: H },
     nameBar, nameFontSize, costOnSecondLine, costSymbolSize: COST_SYMBOL,
-    art, typeBar,
+    art, typeBar, typeFontSize,
     textBox, textFontSize: c.textSize, lineHeight: lineHeightFor(c.textSize), symbolSize: symbolSizeFor(c.textSize), textLines: c.lines,
     statBox,
     overflow: c.overflow, strippedReminder: c.stripped,

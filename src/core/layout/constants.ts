@@ -16,3 +16,5 @@ export const TEXT_FLOOR = 11   // absolute floor; below this we clip
 export const NAME_MIN = 14
 export const COST_SYMBOL = 18  // symbol size in the name bar
 export const LINE_HEIGHT_RATIO = 1.22
+export const TYPE_SIZE = 18     // type line base size
+export const TYPE_MIN = 11      // type line floor; below this the line is clipped to its bar

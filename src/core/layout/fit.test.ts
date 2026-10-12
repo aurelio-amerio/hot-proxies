@@ -61,6 +61,15 @@ describe('fit', () => {
     const last = g.textLines[g.textLines.length - 1]
     expect(last.width).toBeLessThanOrEqual(inner - (g.statBox!.w + 4))
   })
+  it('shrinks a long type line until it fits inside the type bar', () => {
+    const typeLine = 'Legendary Artifact Planeswalker — Equipment Luxior'
+    const g = fit(synthetic(5, { typeLine }), S, nodeEnv)
+    expect(g.typeFontSize).toBeLessThan(18)
+    const ctx = nodeEnv.createCanvas(8, 8).getContext('2d')
+    ctx.font = `bold ${g.typeFontSize}px ${S.fontFamily}`
+    expect(ctx.measureText(typeLine).width).toBeLessThanOrEqual(g.typeBar.w - 16)
+    expect(fit(card('bolt'), S, nodeEnv).typeFontSize).toBe(18)
+  })
   it('uses the whole name bar when there is no mana cost', () => {
     const g = fit(card('starting-town'), S, nodeEnv)
     expect(g.nameFontSize).toBe(22); expect(g.costOnSecondLine).toBe(false); expect(g.statBox).toBeUndefined()
