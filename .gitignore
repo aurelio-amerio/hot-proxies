@@ -154,6 +154,10 @@ vite.config.ts.timestamp-*
 # Scryfall bulk data (194 MB, source for scripts/build-name-index.ts)
 oracle-cards-*.jsonl
 
+# Upstream Mana icon set (https://github.com/andrewgioia/mana, v1.18.0), source for
+# scripts/vendor-mana.ts only; the generated src/assets/mana/paths.ts is committed.
+mana-master/
+
 node_modules/
 dist/
 dev-dist/
