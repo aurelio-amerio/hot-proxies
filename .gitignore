@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# brainstorming companion sessions
+.superpowers/
+
+# Scryfall bulk data (194 MB, source for scripts/build-name-index.ts)
+oracle-cards-*.jsonl
