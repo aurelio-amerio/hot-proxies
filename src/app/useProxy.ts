@@ -18,6 +18,7 @@ export function useProxy(services: Services, settings: Settings) {
   const [bits, setBits] = useState<BitImage | null>(null)
   const [geometry, setGeometry] = useState<Geometry | null>(null)
   const [errors, setErrors] = useState<Error[]>([])
+  const [fontError, setFontError] = useState<Error | null>(null)
   const seq = useRef(0)
 
   const render = useCallback(async (name: string) => {
@@ -45,13 +46,19 @@ export function useProxy(services: Services, settings: Settings) {
   useEffect(() => {
     if (!card) return
     let on = true
-    ensureFonts(settings.fontFamily).then(() => {
+    const draw = (fontError: Error | null) => {
       if (!on) return
+      setFontError(fontError)
       const r = renderProxy(card, art, settings, services.env)
       setBits(r.bits); setGeometry(r.geometry)
-    })
+    }
+    // A missing font (e.g. MPlantin without the local file) must not stall rendering: fall back and warn.
+    ensureFonts(settings.fontFamily).then(
+      () => draw(null),
+      () => draw(new Error(`Font ${settings.fontFamily} could not be loaded; rendering with a fallback font.`)),
+    )
     return () => { on = false }
   }, [card, art, settings, services.env])
 
-  return { state, card, bits, geometry, errors, render }
+  return { state, card, bits, geometry, errors: fontError ? [...errors, fontError] : errors, render }
 }
