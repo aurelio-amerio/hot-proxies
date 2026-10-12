@@ -17,7 +17,9 @@ npm run test:watch
 npx vitest run src/core/layout/fit.test.ts        # single file
 npx vitest run -t "renders bolt"                  # single test by name
 npm run typecheck            # tsc for app (tsconfig.json) and node scripts (tsconfig.node.json)
-npm run build                # typecheck + vite build with service worker
+npm run build                # typecheck + vite build with service worker, served from /
+BASE_PATH=/hot-proxies/ npm run build   # what the Pages workflow runs; base path, manifest start_url/scope and SW scope follow it
+npm run preview              # serve dist/ locally
 UPDATE_GOLDEN=1 npm test     # accept new golden renders after an intentional rendering change
 npm run build:names -- oracle-cards-YYYYMMDDhhmmss.jsonl   # rebuild public/names.json from Scryfall bulk JSONL
 npm run vendor:mana          # regenerate src/assets/mana/paths.ts from mana-master/svg
@@ -51,6 +53,7 @@ Three layers, with a hard rule: `src/core/` is framework-free TypeScript and nev
 
 ## Repo notes
 
+- Deployment: `.github/workflows/pages.yml` tests, builds with `BASE_PATH=/<repo>/` and publishes `dist/` to GitHub Pages on every push to `main` (Pages source must be set to "GitHub Actions" in the repo settings). Locally the base path is `/`, so `npm run dev` and `npm run preview` need no extra setup.
 - `oracle-cards-*.jsonl` (≈200 MB Scryfall bulk export), `dist/`, `.superpowers/` and `src/assets/fonts/local/` (optional MPlantin font) are gitignored. The root `*.png` files and `brainstorm/` are reference scans and mockups, not app assets.
 - `mana-master/` is the upstream Mana icon set kept only as the source for `npm run vendor:mana`.
 - Fonts: Crimson Text (SIL OFL) is bundled as `ProxySerif`. MPlantin is an opt-in setting that only works if `src/assets/fonts/local/mplantin.ttf` is present; the app must keep rendering with a fallback and a warning when it is missing.

@@ -9,6 +9,10 @@ Black-and-white Magic: The Gathering proxies sized for a 58 mm thermal printer (
     npm run dev          # http://localhost:5173
     npm test             # Vitest: core, data and UI tests
     npm run build        # type-check + production build with service worker
+    npm run preview      # serve the production build locally
+
+Pushes to `main` are deployed to GitHub Pages by `.github/workflows/pages.yml`,
+which builds with `BASE_PATH=/hot-proxies/` so the app lives under the repo subpath.
 
 ## Data
 
