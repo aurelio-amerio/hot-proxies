@@ -39,7 +39,7 @@ chosen so they slot in without rework.
 | Layout | Adaptive. Start from the classic proportions, shrink art first, then text. Readability beats art. |
 | Stack | Vite, React, TypeScript, MUI (Material Design), `vite-plugin-pwa`, Vitest. |
 | Rendering | Hand-written Canvas 2D renderer in framework-free TypeScript. |
-| Fonts | Bundled free serif (Crimson Pro or Libre Caslon, regular and bold) as woff2. MPlantin from `mana-master/fonts` is a local, uncommitted option behind a flag because its license is unclear. |
+| Fonts | Bundled free serif Crimson Text (Regular and Bold TTF, SIL OFL). MPlantin from `mana-master/fonts` is a local, uncommitted option behind a flag because its license is unclear. |
 
 ## 3. Architecture
 
@@ -102,7 +102,9 @@ otherwise a hand-rolled bigram scorer.
 ### 4.3 Scryfall
 
 - `fetchCard(exactName)` calls
-  `https://api.scryfall.com/cards/named?exact=<name>`; CORS is confirmed open.
+  `https://api.scryfall.com/cards/named?exact=<name>` with an `Accept:
+  application/json` header; CORS is confirmed open and the browser supplies
+  its own User-Agent.
 - `fetchArt(url)` loads `image_uris.art_crop` with `crossOrigin="anonymous"`
   into an `ImageBitmap`; the CDN sends `access-control-allow-origin: *`.
 - Both responses are cached in IndexedDB keyed by exact name (JSON) and URL
@@ -154,7 +156,9 @@ and type line, with wrapping disabled.
 On first use at a given size, each Mana SVG is drawn via an `Image` onto a
 small canvas, centered in a white circle with a 2-dot black outline, and
 thresholded. Stamps are cached by `(symbol, size)`. Hybrid `{W/U}` splits the
-circle along the diagonal using `half.svg` with each glyph scaled to its half.
+circle along the diagonal with a drawn line, each glyph scaled to about 55 %
+and placed in its own half (`half.svg` in the set is the "½" glyph, not a
+half circle).
 Phyrexian `{G/P}` overlays `p.svg`. Numbers `{0}` to `{20}` use the digit
 glyphs; larger numbers and `{X}`, `{Y}`, `{Z}`, `{S}`, `{E}`, `{C}`, `{T}`,
 `{Q}` map to their SVGs. Any unknown symbol renders as its literal text in a
