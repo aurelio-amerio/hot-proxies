@@ -19,7 +19,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   dither: 'atkinson', block: 1, gamma: 1.2, contrastCutoff: 1,
-  textSize: 17, nameSize: 22, stripReminder: true,
+  textSize: 20, nameSize: 22, stripReminder: true,
   dotsPerLine: DOTS_PER_LINE, dpi: DPI, fontFamily: 'ProxySerif',
 }
 

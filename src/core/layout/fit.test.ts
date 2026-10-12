@@ -24,11 +24,11 @@ describe('fit', () => {
   })
   it('gives a short card full-size art at base text size', () => {
     const g = fit(card('bolt'), S, nodeEnv)
-    expect(g.art.h).toBe(ART_MAX); expect(g.textFontSize).toBe(17); expect(g.overflow).toBe(false)
+    expect(g.art.h).toBe(ART_MAX); expect(g.textFontSize).toBe(S.textSize); expect(g.overflow).toBe(false)
   })
   it('shrinks art before text for a medium card', () => {
-    const g = fit(synthetic(90), S, nodeEnv)
-    expect(g.textFontSize).toBe(17); expect(g.art.h).toBeLessThan(ART_MAX); expect(g.art.h).toBeGreaterThanOrEqual(ART_MID)
+    const g = fit(synthetic(60), S, nodeEnv)
+    expect(g.textFontSize).toBe(S.textSize); expect(g.art.h).toBeLessThan(ART_MAX); expect(g.art.h).toBeGreaterThanOrEqual(ART_MID)
   })
   it('fits Bolas without overflow and with a loyalty box', () => {
     const g = fit(card('bolas'), S, nodeEnv)
@@ -39,7 +39,7 @@ describe('fit', () => {
     const g = fit(synthetic(120), S, nodeEnv)
     expect(g.overflow).toBe(false)
     expect(g.art.h).toBeLessThanOrEqual(ART_MID)
-    expect(g.textFontSize).toBeLessThan(17); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN)
+    expect(g.textFontSize).toBeLessThan(S.textSize); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN)
     expect(g.statBox).toBeDefined()
   })
   it('strips reminder text only when needed and reports it', () => {
