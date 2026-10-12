@@ -1,4 +1,4 @@
-# hot-proxies
+# MTG thermal proxies
 
 Black-and-white Magic: The Gathering proxies sized for a 58 mm thermal printer (PT-210 class), rendered in the browser as a PWA.
 
