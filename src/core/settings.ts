@@ -9,8 +9,8 @@ export interface Settings {
   block: 1 | 2
   gamma: number          // 0.8 .. 1.6
   contrastCutoff: number // 0 .. 5 (percent)
-  textSize: number       // 14 .. 22
-  nameSize: number       // 16 .. 26
+  textSize: number       // 14 .. 28
+  nameSize: number       // 16 .. 30
   stripReminder: boolean
   dotsPerLine: number    // 192 .. 832
   dpi: number            // 100 .. 400
@@ -19,12 +19,12 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   dither: 'atkinson', block: 1, gamma: 1.2, contrastCutoff: 1,
-  textSize: 20, nameSize: 22, stripReminder: true,
+  textSize: 24, nameSize: 26, stripReminder: true,
   dotsPerLine: DOTS_PER_LINE, dpi: DPI, fontFamily: 'ProxySerif',
 }
 
 export const RANGES = {
-  gamma: [0.8, 1.6], contrastCutoff: [0, 5], textSize: [14, 22], nameSize: [16, 26],
+  gamma: [0.8, 1.6], contrastCutoff: [0, 5], textSize: [14, 28], nameSize: [16, 30],
   dotsPerLine: [192, 832], dpi: [100, 400],
 } as const
 

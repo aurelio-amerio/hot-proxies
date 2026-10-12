@@ -27,7 +27,7 @@ describe('fit', () => {
     expect(g.art.h).toBe(ART_MAX); expect(g.textFontSize).toBe(S.textSize); expect(g.overflow).toBe(false)
   })
   it('shrinks art before text for a medium card', () => {
-    const g = fit(synthetic(60), S, nodeEnv)
+    const g = fit(synthetic(40), S, nodeEnv)
     expect(g.textFontSize).toBe(S.textSize); expect(g.art.h).toBeLessThan(ART_MAX); expect(g.art.h).toBeGreaterThanOrEqual(ART_MID)
   })
   it('fits Bolas without overflow and with a loyalty box', () => {
@@ -72,11 +72,11 @@ describe('fit', () => {
   })
   it('uses the whole name bar when there is no mana cost', () => {
     const g = fit(card('starting-town'), S, nodeEnv)
-    expect(g.nameFontSize).toBe(22); expect(g.costOnSecondLine).toBe(false); expect(g.statBox).toBeUndefined()
+    expect(g.nameFontSize).toBe(S.nameSize); expect(g.costOnSecondLine).toBe(false); expect(g.statBox).toBeUndefined()
   })
   it('shrinks a long name to clear the cost', () => {
     const g = fit(card('bolas'), S, nodeEnv)
-    expect(g.nameFontSize).toBeLessThan(22); expect(g.costOnSecondLine).toBe(false)
+    expect(g.nameFontSize).toBeLessThan(S.nameSize); expect(g.costOnSecondLine).toBe(false)
   })
   it('moves a huge cost to a second line', () => {
     const g = fit(synthetic(5, { manaCost: '{W}{U}{B}{R}{G}{W}{U}{B}{R}{G}{W}{U}' }), S, nodeEnv)

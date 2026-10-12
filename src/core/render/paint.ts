@@ -6,7 +6,7 @@ import type { BitImage } from '../art/types'
 import { StampCache } from '../symbols/stamp'
 import { drawLines } from '../text/draw'
 import { canvasToBitImage } from '../output/packed'
-import { FRAME, TEXT_PAD, STAT_PAD } from '../layout/constants'
+import { FRAME, TEXT_PAD, STAT_PAD, NAME_H } from '../layout/constants'
 
 const strokeRect = (ctx: Ctx2D, r: Rect, lw: number) => {
   ctx.lineWidth = lw; ctx.strokeStyle = '#000'
@@ -25,11 +25,11 @@ export function paint(card: CardData, g: Geometry, artBits: BitImage | null, s: 
   // name bar
   strokeRect(ctx, g.nameBar, 2)
   ctx.fillStyle = '#000'; ctx.font = `bold ${g.nameFontSize}px ${family}`; ctx.textBaseline = 'alphabetic'
-  ctx.fillText(card.name, g.nameBar.x + 8, g.nameBar.y + Math.round(34 * 0.68))
+  ctx.fillText(card.name, g.nameBar.x + 8, g.nameBar.y + Math.round(NAME_H * 0.68))
   const codes = (card.manaCost.match(/\{([^}]+)\}/g) ?? []).map((m) => m.slice(1, -1))
   if (codes.length) {
     const step = g.costSymbolSize + 3
-    const y = g.costOnSecondLine ? g.nameBar.y + 34 : g.nameBar.y + Math.round((34 - g.costSymbolSize) / 2)
+    const y = g.costOnSecondLine ? g.nameBar.y + NAME_H : g.nameBar.y + Math.round((NAME_H - g.costSymbolSize) / 2)
     let x = g.nameBar.x + g.nameBar.w - 8 - codes.length * step + 3
     for (const code of codes) { ctx.drawImage(stamps.get(code, g.costSymbolSize).canvas, x, y); x += step }
   }

@@ -179,11 +179,11 @@ the box is drawn empty with its frame and the card still renders.
 
 ### 5.5 Fit algorithm
 
-Fixed heights: outer margin 8, name bar 34, type bar 28, gaps 4. The remaining
-420 dots are shared between art and text box. The text box is sized to the
+Fixed heights: outer margin 8, name bar 38, type bar 28, gaps 4. The remaining
+416 dots are shared between art and text box. The text box is sized to the
 wrapped text height plus padding; the art takes the remainder.
 
-1. Rules text 20 px, name 22 px, art 250. Fits? Done.
+1. Rules text 24 px, name 26 px, art 250. Fits? Done.
 2. Shrink art in steps of 10 down to 180. Fits? Done.
 3. With art at 180, step rules text down 1 px at a time to 14, re-wrapping.
    Fits? Done.
@@ -239,8 +239,8 @@ MUI Alerts under the search field:
 
 - Art: dither algorithm, block size (1, 2), gamma (0.8 to 1.6), contrast cutoff
   (0 to 5 %).
-- Text: base rules text size (14 to 22, default 20), base name size (16 to 26,
-  default 22), strip reminder text (default on).
+- Text: base rules text size (14 to 28, default 24), base name size (16 to 30,
+  default 26), strip reminder text (default on).
 - Printer: dots per line (default 384), dpi (default 203). Card height is
   derived from width and the 63:88 ratio.
 - Reset to defaults.

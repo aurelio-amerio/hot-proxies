@@ -19,7 +19,7 @@ describe('normalizeSettings', () => {
   it('clamps and defaults a corrupt object', () => {
     const s = normalizeSettings({ gamma: 9, textSize: 'big', dither: 'magic', block: 3, dotsPerLine: 100, stripReminder: 'yes' })
     expect(s.gamma).toBe(1.6)
-    expect(s.textSize).toBe(20)
+    expect(s.textSize).toBe(24)
     expect(s.dither).toBe('atkinson')
     expect(s.block).toBe(1)
     expect(s.dotsPerLine).toBe(192)
