@@ -1,0 +1,4 @@
+@font-face { font-family: 'ProxySerif'; src: url('./fonts/CrimsonText-Regular.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'ProxySerif'; src: url('./fonts/CrimsonText-Bold.ttf') format('truetype'); font-weight: 700; }
+/* Optional, uncommitted: drop mplantin.ttf into src/assets/fonts/local/ to enable the MPlantin setting. */
+@font-face { font-family: 'MPlantin'; src: url('./fonts/local/mplantin.ttf') format('truetype'); font-weight: 400; }

@@ -153,3 +153,8 @@ vite.config.ts.timestamp-*
 
 # Scryfall bulk data (194 MB, source for scripts/build-name-index.ts)
 oracle-cards-*.jsonl
+
+node_modules/
+dist/
+dev-dist/
+src/assets/fonts/local/
