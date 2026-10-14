@@ -7,6 +7,7 @@ import { App } from './App'
 import type { Services } from './services'
 import { CardNotFound, NetworkError } from '../core/errors'
 import { nodeEnv } from '../../tests/nodeEnv'
+import { fakePrinter } from '../../tests/fakePrinter'
 
 const bolt = JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))
 const delver = JSON.parse(readFileSync('tests/fixtures/cards/delver.json', 'utf8'))
@@ -18,6 +19,7 @@ function services(fetchCard: Services['client']['fetchCard']): Services {
     env: nodeEnv,
     storage: { getItem: () => null, setItem: () => {} },
     decodeArt: async () => { throw new Error('unused') },
+    printer: fakePrinter(),
   }
 }
 vi.mock('./browserEnv', async (orig) => ({ ...(await orig<object>()), ensureFonts: async () => {} }))
