@@ -44,10 +44,10 @@ produces exactly the stream that printed:
 repeat per block of up to 64 rows:
   1D 76 30 00 xL xH yL yH  GS v 0       raster, xL xH = bytes per row (48), yL yH = rows
   <rows * bytesPerRow bytes, MSB first, 1 = black>   (from output/packed.ts)
-1B 64 04                   ESC d 4      feed 4 lines
+1B 64 02                   ESC d 2      feed 2 lines (4 left too much paper between cards)
 ```
 
-Constants `RASTER_BLOCK_ROWS = 64`, `FEED_LINES_AFTER = 4` and
+Constants `RASTER_BLOCK_ROWS = 64`, `FEED_LINES_AFTER = 2` and
 `BLE_CHUNK_BYTES = 100` live in `src/core/printer.ts`. They are not user
 settings.
 
@@ -81,7 +81,7 @@ export async function printJob(
 ): Promise<void>
 ```
 
-`printJob` calls `setPrinting(true)`, slices `bytes` into `chunk`-sized
+`encodeEscPosFrames` returns the stream as frames (header, one per raster block, feed) and `encodeEscPosRaster` is their concatenation. `printJob` takes frames (or one buffer), calls `setPrinting(true)`, slices into `chunk`-sized
 writes (default `BLE_CHUNK_BYTES`), awaits each, reports progress after each,
 throws a `DOMException` named `AbortError` if the signal fires between chunks,
 lets a write failure propagate, and always calls `setPrinting(false)` at the
@@ -146,8 +146,8 @@ partial card.
 | GATT connect fails | state `disconnected`, snackbar "Could not connect to the printer. Make sure it is on and nearby." |
 | no writable characteristic | state `disconnected`, snackbar "This device does not look like a supported printer." |
 | connection drops while idle | chip flips to "tap to reconnect" |
-| write fails / drop mid-print | state `disconnected`, snackbar "Printer disconnected during printing. Reconnect and print again." progress reset |
-| user cancels print | writes stop between chunks; printer may emit a partial card; no error |
+| write fails (any GATT rejection, even without a disconnect event) / drop mid-print | state `disconnected`, snackbar "Printer disconnected during printing. Reconnect and print again." progress reset |
+| user cancels print | writes stop at the next frame boundary (never inside a `GS v 0` block, which would desync the printer); the feed is still sent; printer emits a partial card; no error |
 | no Web Bluetooth / insecure context | chip "No Bluetooth", Print hidden |
 
 ## 5. Android notes (for README)

@@ -6,6 +6,7 @@ import { useProxy } from './useProxy'
 import type { Services } from './services'
 import { DEFAULT_SETTINGS } from '../core/settings'
 import { nodeEnv } from '../../tests/nodeEnv'
+import { fakePrinter } from '../../tests/fakePrinter'
 
 vi.mock('./browserEnv', async (orig) => ({
   ...(await orig<object>()),
@@ -19,6 +20,7 @@ const services: Services = {
   env: nodeEnv,
   storage: { getItem: () => null, setItem: () => {} },
   decodeArt: async () => { throw new Error('unused') },
+  printer: fakePrinter(),
 }
 
 describe('useProxy', () => {
