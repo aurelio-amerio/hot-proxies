@@ -45,7 +45,7 @@ export function App({ services }: { services: Services }) {
           {geometry?.overflow && <Alert severity="warning">Rules text was clipped to fit.</Alert>}
           {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
           {state === 'rendered' && card && bits && (
-            <Preview bits={bits} cardName={card.name} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
+            <Preview bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
               print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
           )}
         </Stack>

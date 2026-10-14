@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Chrome PWA that turns a Magic: The Gathering card name into a 1-bit black-and-white proxy bitmap sized for a **PT-210 class 58 mm Bluetooth thermal printer** (384 dots per line, 203 dpi, card 384 × 536 dots at the real 63:88 ratio). The end goal is to print these proxies directly on that printer. Phase 1 renders, previews and downloads PNG. Phase 2 prints over Web Bluetooth (BLE GATT, ESC/POS `GS v 0` raster); its design is `docs/superpowers/specs/2026-10-14-bluetooth-printing-design.md`. The approved design lives in `docs/superpowers/specs/2026-10-12-hot-proxies-design.md`; read it before changing layout, fit or output behaviour.
+A Chrome PWA that turns a Magic: The Gathering card name into a 1-bit black-and-white proxy bitmap sized for a **PT-210 class 58 mm Bluetooth thermal printer** (384 dots per line, 203 dpi, card 384 × 536 dots at the real 63:88 ratio). The end goal is to print these proxies directly on that printer. Phase 1 rendered, previewed and downloaded PNG (the Download button has since been removed; Print is the only action). Phase 2 prints over Web Bluetooth (BLE GATT, ESC/POS `GS v 0` raster); its design is `docs/superpowers/specs/2026-10-14-bluetooth-printing-design.md`. The approved design lives in `docs/superpowers/specs/2026-10-12-hot-proxies-design.md`; read it before changing layout, fit or output behaviour.
 
 ## Commands
 
