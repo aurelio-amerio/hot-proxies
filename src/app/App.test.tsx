@@ -64,7 +64,8 @@ describe('App printing', () => {
     expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled()
     await userEvent.click(screen.getByRole('button', { name: 'Print' }))
     await waitFor(() => expect(printer.writes.reduce((a, w) => a + w.length, 0)).toBe(25808))
-    expect(printer.writes[0].length).toBe(100)
+    expect(printer.writes[0].length).toBe(5)   // header frame; raster blocks follow in 100-byte chunks
+    expect(printer.writes[1].length).toBe(100)
   })
   it('hides Print and shows "No Bluetooth" when unsupported', async () => {
     render(<App services={services(async () => bolt, fakePrinter('unsupported'))} />)
@@ -83,7 +84,8 @@ describe('App printing', () => {
     const printer = fakePrinter('connected'); printer.name = 'PT210_FAKE'
     let release!: () => void
     const origWrite = printer.write.bind(printer)
-    printer.write = async (b) => { await new Promise<void>((r) => { release = r }); await origWrite(b) }
+    let gated = true
+    printer.write = async (b) => { if (gated) { gated = false; await new Promise<void>((r) => { release = r }) } await origWrite(b) }
     render(<App services={services(async () => bolt, printer)} />)
     await pick('Lightning Bolt')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled())
@@ -93,6 +95,6 @@ describe('App printing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     release()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeInTheDocument())
-    expect(printer.writes.length).toBe(1)
+    expect(printer.writes.map((w) => w.length)).toEqual([5, 3])   // header, then feed after cancel
   })
 })

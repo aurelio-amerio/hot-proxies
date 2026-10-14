@@ -49,7 +49,7 @@ describe('usePrinter', () => {
   it('prints the encoded card in chunks and resets progress afterwards', async () => {
     const f = fakePrinter('connected'); const { result } = renderHook(() => usePrinter(services(f)))
     await act(() => result.current.print(small))
-    expect(f.writes.map((w) => w.length)).toEqual([100, 60])
+    expect(f.writes.map((w) => w.length)).toEqual([5, 100, 52, 3])   // header, block (152 B), feed
     expect(Array.from(f.writes[0].subarray(0, 5))).toEqual([0x1b, 0x40, 0x1b, 0x61, 0x00])
     expect(result.current.progress).toBe(0)
     expect(result.current.state).toBe('connected')
@@ -76,7 +76,8 @@ describe('usePrinter', () => {
     const origWrite = f.write.bind(f)
     f.write = async (b) => { await origWrite(b); result.current.cancel() }
     await act(() => result.current.print(small))
-    expect(f.writes.length).toBe(1)
+    expect(f.writes.map((w) => w.length)).toEqual([5, 3])   // header frame, then the feed; the raster block is skipped
+    expect(Array.from(f.writes[1])).toEqual([0x1b, 0x64, 0x02])
     expect(result.current.error).toBeNull()
     await waitFor(() => expect(result.current.state).toBe('connected'))
   })

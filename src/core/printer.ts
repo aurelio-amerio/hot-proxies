@@ -7,7 +7,7 @@ export function cardHeight(width: number): number {
 }
 /** ESC/POS `GS v 0` raster is sent in blocks of this many rows. */
 export const RASTER_BLOCK_ROWS = 64
-/** Lines fed after the card so it clears the tear bar (`ESC d n`). */
-export const FEED_LINES_AFTER = 4
+/** Lines fed after the card (`ESC d n`). 4 left too much paper between cards; 2 chosen on the real printer (2026-10-14). */
+export const FEED_LINES_AFTER = 2
 /** Bytes per BLE write. 100 printed a full card correctly on the PT-210 (2026-10-14). */
 export const BLE_CHUNK_BYTES = 100

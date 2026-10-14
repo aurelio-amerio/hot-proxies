@@ -34,17 +34,37 @@ export interface PrintJobOptions {
   onProgress?: (sent: number, total: number) => void
 }
 
-/** Sends `bytes` in order as `chunk`-sized writes. Never retries. */
-export async function printJob(t: PrinterTransport, bytes: Uint8Array, opts: PrintJobOptions = {}): Promise<void> {
+/**
+ * Sends `data` in order as `chunk`-sized writes. Never retries.
+ * With a single buffer, abort is honoured between chunks. With frames (see `encodeEscPosFrames`),
+ * abort is honoured only between frames so the printer is never left inside a raster block, and
+ * the final frame (the feed) is still sent so the partial card clears the head.
+ */
+export async function printJob(t: PrinterTransport, data: Uint8Array | Uint8Array[], opts: PrintJobOptions = {}): Promise<void> {
   const chunk = opts.chunk ?? BLE_CHUNK_BYTES
+  const frames = Array.isArray(data) ? data : [data]
+  const atomicFrames = Array.isArray(data)
+  const total = frames.reduce((a, f) => a + f.length, 0)
+  let sent = 0
+  const aborted = () => opts.signal?.aborted === true
+  const writeFrame = async (f: Uint8Array) => {
+    for (let i = 0; i < f.length; i += chunk) {
+      if (!atomicFrames && aborted()) throw new DOMException('Print cancelled', 'AbortError')
+      const end = Math.min(i + chunk, f.length)
+      await t.write(f.subarray(i, end))
+      sent += end - i
+      opts.onProgress?.(sent, total)
+    }
+  }
   t.setPrinting(true)
   try {
-    opts.onProgress?.(0, bytes.length)
-    for (let i = 0; i < bytes.length; i += chunk) {
-      if (opts.signal?.aborted) throw new DOMException('Print cancelled', 'AbortError')
-      const end = Math.min(i + chunk, bytes.length)
-      await t.write(bytes.subarray(i, end))
-      opts.onProgress?.(end, bytes.length)
+    opts.onProgress?.(0, total)
+    for (let k = 0; k < frames.length; k++) {
+      if (atomicFrames && aborted()) {
+        if (k < frames.length - 1) await writeFrame(frames[frames.length - 1])
+        throw new DOMException('Print cancelled', 'AbortError')
+      }
+      await writeFrame(frames[k])
     }
   } finally {
     t.setPrinting(false)

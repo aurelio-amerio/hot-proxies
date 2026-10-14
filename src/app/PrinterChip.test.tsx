@@ -43,3 +43,17 @@ describe('PrinterChip', () => {
     expect(chip).not.toBeNull()
   })
 })
+
+describe('PrinterChip green dot', () => {
+  const dot = () => document.querySelector('.MuiBadge-dot') as HTMLElement
+  it('shows the dot when connected or printing and hides it otherwise', () => {
+    const { rerender } = render(<PrinterChip state="connected" name="PT210" onConnect={() => {}} onDisconnect={() => {}} />)
+    expect(dot()).toHaveClass('MuiBadge-colorSuccess'); expect(dot()).not.toHaveClass('MuiBadge-invisible')
+    rerender(<PrinterChip state="printing" name="PT210" onConnect={() => {}} onDisconnect={() => {}} />)
+    expect(dot()).not.toHaveClass('MuiBadge-invisible')
+    rerender(<PrinterChip state="disconnected" name="PT210" onConnect={() => {}} onDisconnect={() => {}} />)
+    expect(dot()).toHaveClass('MuiBadge-invisible')
+    rerender(<PrinterChip state="connecting" name="PT210" onConnect={() => {}} onDisconnect={() => {}} />)
+    expect(dot()).toHaveClass('MuiBadge-invisible')
+  })
+})

@@ -4,7 +4,7 @@ import { createBluetoothPrinter, PRINTER_SERVICES } from './bluetoothPrinter'
 import { NotAPrinter, PrinterCancelled } from '../core/printer/transport'
 
 type Props = { write?: boolean; writeWithoutResponse?: boolean }
-type Legacy = { legacyOnly?: boolean }
+type Legacy = { legacyOnly?: boolean; failWrite?: Error }
 
 /** A fake BluetoothDevice exposing the given services (keyed by service uuid). */
 function makeDevice(available: Record<string, Props>, opts: Legacy = {}) {
@@ -22,6 +22,11 @@ function makeDevice(available: Record<string, Props>, opts: Legacy = {}) {
           const c: Record<string, unknown> = {
             properties: { write: false, writeWithoutResponse: false, ...available[uuid] },
             writeValue: async (v: Uint8Array) => { calls.legacy.push(new Uint8Array(v)) },
+          }
+          if (opts.failWrite) {
+            const err = opts.failWrite
+            c.writeValue = c.writeValueWithoutResponse = c.writeValueWithResponse = async () => { throw err }
+            return c
           }
           if (!opts.legacyOnly) {
             c.writeValueWithoutResponse = async (v: Uint8Array) => { calls.withoutResponse.push(new Uint8Array(v)) }
@@ -135,6 +140,16 @@ describe('createBluetoothPrinter', () => {
     t.setPrinting(true); expect(t.state).toBe('printing')
     t.setPrinting(false); expect(t.state).toBe('connected')
     t.setPrinting(true); d.drop(); t.setPrinting(false)
+    expect(t.state).toBe('disconnected')
+  })
+  it('treats a rejected write as a drop even without a gattserverdisconnected event', async () => {
+    const d = makeDevice({ [ISSC.service]: { writeWithoutResponse: true } }, { failWrite: new DOMException('GATT operation failed', 'NetworkError') })
+    const t = createBluetoothPrinter(makeBluetooth(d.device).bluetooth)
+    await t.connect(); t.setPrinting(true)
+    await expect(t.write(Uint8Array.from([1]))).rejects.toThrow(/GATT operation failed/)
+    expect(t.state).toBe('disconnected')
+    expect(d.gatt.disconnect).toHaveBeenCalled()
+    t.setPrinting(false)
     expect(t.state).toBe('disconnected')
   })
   it('disconnect() releases the GATT link', async () => {

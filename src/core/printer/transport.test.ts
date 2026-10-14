@@ -40,3 +40,18 @@ describe('printJob', () => {
     expect(f.state).toBe('disconnected')   // setPrinting(false) must not resurrect 'connected'
   })
 })
+
+describe('printJob with frames', () => {
+  it('writes frames back to back in chunks', async () => {
+    const f = fakePrinter('connected')
+    await printJob(f, [bytes(150), bytes(150), bytes(3)], { chunk: 100 })
+    expect(f.writes.map((w) => w.length)).toEqual([100, 50, 100, 50, 3])
+  })
+  it('on abort finishes the current frame, skips the rest, sends the final frame, then throws AbortError', async () => {
+    const f = fakePrinter('connected'); const ac = new AbortController()
+    const p = printJob(f, [bytes(150), bytes(150), bytes(3)], { chunk: 100, signal: ac.signal, onProgress: (sent) => { if (sent === 100) ac.abort() } })
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' })
+    expect(f.writes.map((w) => w.length)).toEqual([100, 50, 3])
+    expect(f.state).toBe('connected')
+  })
+})

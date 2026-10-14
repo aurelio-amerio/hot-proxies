@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { BitImage } from '../core/art/types'
 import { toPacked } from '../core/output/packed'
-import { encodeEscPosRaster } from '../core/output/escpos'
+import { encodeEscPosFrames } from '../core/output/escpos'
 import { printJob, PrinterCancelled, NotAPrinter, type PrinterState } from '../core/printer/transport'
 
 export const PRINTER_MESSAGES = {
@@ -35,10 +35,10 @@ export function usePrinter(services: Services) {
   const print = useCallback(async (bits: BitImage) => {
     if (printer.state !== 'connected') return
     setError(null); setProgress(0)
-    const bytes = encodeEscPosRaster(toPacked(bits), bits.width, bits.height)
+    const frames = encodeEscPosFrames(toPacked(bits), bits.width, bits.height)
     const ac = new AbortController(); abort.current = ac
     try {
-      await printJob(printer, bytes, { signal: ac.signal, onProgress: (sent, total) => setProgress(total ? sent / total : 0) })
+      await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => setProgress(total ? sent / total : 0) })
     } catch (e) {
       if (!(e instanceof DOMException && e.name === 'AbortError')) setError(PRINTER_MESSAGES.dropped)
     } finally {

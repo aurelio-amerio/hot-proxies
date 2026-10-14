@@ -74,9 +74,18 @@ export function createBluetoothPrinter(bluetooth: Bluetooth | undefined): Printe
     async write(bytes) {
       if (!char) throw new Error('Printer is not connected')
       const value = Uint8Array.from(bytes)   // fresh ArrayBuffer-backed copy for the BufferSource parameter
-      if (char.properties.writeWithoutResponse && char.writeValueWithoutResponse) return char.writeValueWithoutResponse(value)
-      if (char.writeValueWithResponse) return char.writeValueWithResponse(value)
-      return char.writeValue(value)
+      try {
+        if (char.properties.writeWithoutResponse && char.writeValueWithoutResponse) await char.writeValueWithoutResponse(value)
+        else if (char.writeValueWithResponse) await char.writeValueWithResponse(value)
+        else await char.writeValue(value)
+      } catch (e) {
+        // Any GATT failure mid-stream leaves the printer in an unknown state: treat it as a drop
+        // so the UI asks for a reconnect instead of re-enabling Print on a dead or desynced link.
+        char = null
+        if (device?.gatt?.connected) device.gatt.disconnect()
+        set('disconnected')
+        throw e
+      }
     },
     setPrinting(on) {
       if (on && state === 'connected') set('printing')

@@ -1,4 +1,5 @@
 import { useState, type MouseEvent } from 'react'
+import Badge from '@mui/material/Badge'
 import Chip from '@mui/material/Chip'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
@@ -43,6 +44,7 @@ export function PrinterChip({ state, name, onConnect, onDisconnect }: PrinterChi
   const narrow = useMediaQuery(useTheme().breakpoints.down('sm'))
   const label = chipLabel(state, name)
   const clickable = state === 'disconnected' || state === 'connected'
+  const live = state === 'connected' || state === 'printing'
   const onClick = (e: MouseEvent<HTMLElement>) => {
     if (state === 'disconnected') onConnect()
     else if (state === 'connected') setAnchor(e.currentTarget)
@@ -52,15 +54,17 @@ export function PrinterChip({ state, name, onConnect, onDisconnect }: PrinterChi
       <Tooltip title={state === 'unsupported' ? UNSUPPORTED_HINT : label}>
         <span>
           <Chip
-            icon={iconFor(state)}
+            icon={<Badge variant="dot" color="success" overlap="circular" invisible={!live}>{iconFor(state)}</Badge>}
             label={narrow ? undefined : label}
             aria-label={label}
-            color={state === 'connected' || state === 'printing' ? 'success' : 'default'}
+            color={live ? 'success' : 'default'}
             variant="outlined"
             clickable={clickable}
             disabled={state === 'unsupported'}
             onClick={clickable ? onClick : undefined}
-            sx={{ color: 'inherit', borderColor: 'currentColor', mr: 1, '& .MuiChip-icon': { color: 'inherit' } }}
+            sx={live
+              ? { mr: 1, bgcolor: 'rgba(255,255,255,0.08)' }
+              : { color: 'inherit', borderColor: 'currentColor', mr: 1, '& .MuiChip-icon': { color: 'inherit' } }}
           />
         </span>
       </Tooltip>
