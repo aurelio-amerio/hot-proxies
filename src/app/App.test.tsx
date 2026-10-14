@@ -12,14 +12,14 @@ import { fakePrinter } from '../../tests/fakePrinter'
 const bolt = JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))
 const delver = JSON.parse(readFileSync('tests/fixtures/cards/delver.json', 'utf8'))
 
-function services(fetchCard: Services['client']['fetchCard']): Services {
+function services(fetchCard: Services['client']['fetchCard'], printer = fakePrinter()): Services {
   return {
     client: { fetchCard, fetchArtBlob: async () => { throw new Error('no art in tests') } },
     loadNames: async () => ['Lightning Bolt', 'Delver of Secrets'],
     env: nodeEnv,
     storage: { getItem: () => null, setItem: () => {} },
     decodeArt: async () => { throw new Error('unused') },
-    printer: fakePrinter(),
+    printer,
   }
 }
 vi.mock('./browserEnv', async (orig) => ({ ...(await orig<object>()), ensureFonts: async () => {} }))
@@ -49,5 +49,50 @@ describe('App', () => {
     render(<App services={services(async () => delver)} />)
     await pick('Delver of Secrets')
     await waitFor(() => expect(screen.getByText(/'transform' layout/)).toBeInTheDocument())
+  })
+})
+
+describe('App printing', () => {
+  it('shows the chip, enables Print after connecting, and sends the card bytes', async () => {
+    const printer = fakePrinter()
+    render(<App services={services(async () => bolt, printer)} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByTestId('preview')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Print' })).toBeDisabled()
+    await userEvent.click(screen.getByText('Connect printer'))
+    await waitFor(() => expect(screen.getByText('PT210_FAKE')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Print' }))
+    await waitFor(() => expect(printer.writes.reduce((a, w) => a + w.length, 0)).toBe(25808))
+    expect(printer.writes[0].length).toBe(100)
+  })
+  it('hides Print and shows "No Bluetooth" when unsupported', async () => {
+    render(<App services={services(async () => bolt, fakePrinter('unsupported'))} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByTestId('preview')).toBeInTheDocument())
+    expect(screen.getByText('No Bluetooth')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Print' })).toBeNull()
+  })
+  it('shows a snackbar when connecting fails', async () => {
+    const printer = fakePrinter(); printer.connectImpl = async () => { throw new Error('gatt') }
+    render(<App services={services(async () => bolt, printer)} />)
+    await userEvent.click(screen.getByText('Connect printer'))
+    await waitFor(() => expect(screen.getByText(/Could not connect to the printer/)).toBeInTheDocument())
+  })
+  it('shows progress and Cancel while printing', async () => {
+    const printer = fakePrinter('connected'); printer.name = 'PT210_FAKE'
+    let release!: () => void
+    const origWrite = printer.write.bind(printer)
+    printer.write = async (b) => { await new Promise<void>((r) => { release = r }); await origWrite(b) }
+    render(<App services={services(async () => bolt, printer)} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'Print' }))
+    await waitFor(() => expect(screen.getByRole('progressbar', { name: 'Print progress' })).toBeInTheDocument())
+    expect(screen.getByText('PT210_FAKE: printing')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    release()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeInTheDocument())
+    expect(printer.writes.length).toBe(1)
   })
 })
