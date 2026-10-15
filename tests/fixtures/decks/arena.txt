@@ -1,0 +1,6 @@
+Deck
+4 Lightning Bolt (STA) 42
+4 Delver of Secrets (ISD) 51
+
+Sideboard
+2 Spell Pierce (XLN) 81
