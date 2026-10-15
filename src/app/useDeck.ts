@@ -1,12 +1,21 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
 import { parseDeckList, distinctCards, rewriteCardName, lineText, type ParsedDeck, type DistinctEntry } from '../core/deck/parse'
-import { createRun, type DeckCard, type DeckRun } from '../core/deck/run'
+import { createRun, toggleCard as toggleRun, nextPending, markPrinted, progress, reset, type DeckCard, type DeckRun, type PrintItem } from '../core/deck/run'
 import { normalizeScryfall } from '../core/card/normalize'
 import { CardNotFound, NetworkError, UnsupportedLayout } from '../core/errors'
 import { createMatcher, type Matcher } from '../data/fuzzy'
-import type { GreyImage } from '../core/art/types'
+import type { BitImage, GreyImage } from '../core/art/types'
+import { renderProxy } from '../core/render/renderProxy'
+import { ensureFonts } from './browserEnv'
+import { toPacked } from '../core/output/packed'
+import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpos'
+import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
+import { printJob, type PrinterState } from '../core/printer/transport'
+import { PRINTER_MESSAGES } from './usePrinter'
+
+export interface DeckThumb { bits: BitImage; overflow: boolean; artMissing: boolean }
 
 export type DeckState = 'editing' | 'verifying' | 'ready' | 'printing' | 'paused' | 'done'
 export type DeckIssue =
@@ -19,7 +28,6 @@ type Store = Pick<Storage, 'getItem' | 'setItem'>
 const loadText = (s: Store) => { try { return s.getItem(DECK_TEXT_KEY) ?? '' } catch { return '' } }
 
 export function useDeck(services: Services, settings: Settings) {
-  void settings   // used by the thumbnail renderer added in the next task
   const [state, setState] = useState<DeckState>('editing')
   const [text, setTextState] = useState(() => loadText(services.storage))
   const [issues, setIssues] = useState<DeckIssue[] | null>(null)
@@ -29,12 +37,45 @@ export function useDeck(services: Services, settings: Settings) {
   const runRef = useRef<DeckRun | null>(null)
   const stateRef = useRef<DeckState>('editing')
   const seq = useRef(0)
+  const [thumbs, setThumbs] = useState<Map<string, DeckThumb>>(new Map())
+  const [rendering, setRendering] = useState(false)
+  const [fontWarning, setFontWarning] = useState<string | null>(null)
+  const [current, setCurrent] = useState<{ item: PrintItem; fraction: number } | null>(null)
+  const thumbsRef = useRef<Map<string, DeckThumb>>(new Map())
+  const packedRef = useRef<Map<string, Uint8Array>>(new Map())
+  const abort = useRef<AbortController | null>(null)
 
   const parsed = useMemo<ParsedDeck>(() => parseDeckList(text), [text])
   const distinct = useMemo<DistinctEntry[]>(() => distinctCards(parsed.entries), [parsed])
 
   const go = useCallback((s: DeckState) => { stateRef.current = s; setState(s) }, [])
   const setRun = useCallback((r: DeckRun | null) => { runRef.current = r; setRunState(r) }, [])
+
+  // Render one BitImage per distinct card whenever the cards or settings change. Statuses are untouched.
+  const cards = run?.cards ?? null
+  useEffect(() => {
+    if (!cards) return
+    let on = true
+    setRendering(true)
+    const draw = async (fontError: Error | null) => {
+      const next = new Map<string, DeckThumb>()
+      for (let i = 0; i < cards.length; i++) {
+        if (!on) return
+        const c = cards[i]
+        const r = renderProxy(c.card, c.art, settings, services.env)
+        next.set(c.key, { bits: r.bits, overflow: r.geometry.overflow, artMissing: !!c.card.artUrl && !c.art })
+        if (i % 4 === 3) await new Promise<void>((res) => setTimeout(res, 0))   // keep the UI responsive
+      }
+      if (!on) return
+      thumbsRef.current = next; packedRef.current = new Map()
+      setThumbs(next); setFontWarning(fontError ? fontError.message : null); setRendering(false)
+    }
+    ensureFonts(settings.fontFamily).then(
+      () => draw(null),
+      () => draw(new Error(`Font ${settings.fontFamily} could not be loaded; rendering with a fallback font.`)),
+    )
+    return () => { on = false }
+  }, [cards, settings, services.env])
 
   /** Persist text without touching verify state (used by suggestion rewrites). */
   const commitText = useCallback((v: string) => {
@@ -46,7 +87,9 @@ export function useDeck(services: Services, settings: Settings) {
   const setText = useCallback((v: string) => {
     if (stateRef.current === 'verifying' || stateRef.current === 'printing') return
     seq.current++
-    commitText(v); setRun(null); setIssues(null); setVerifyProgress(null); go('editing')
+    commitText(v); setRun(null); setIssues(null); setVerifyProgress(null)
+    setThumbs(new Map()); thumbsRef.current = new Map(); packedRef.current = new Map()
+    go('editing')
   }, [commitText, setRun, go])
 
   const verify = useCallback(async () => {
@@ -54,6 +97,7 @@ export function useDeck(services: Services, settings: Settings) {
     const my = ++seq.current
     const snapshotText = text
     go('verifying'); setError(null); setIssues(null); setRun(null)
+    setThumbs(new Map()); thumbsRef.current = new Map(); packedRef.current = new Map()
     setVerifyProgress({ done: 0, total: distinct.length })
     const found: DeckIssue[] = parsed.issues.map((i) => ({ ...i }))
     const cards: DeckCard[] = []
@@ -107,7 +151,62 @@ export function useDeck(services: Services, settings: Settings) {
   const closeIssues = useCallback(() => setIssues(null), [])
   const clearError = useCallback(() => setError(null), [])
 
-  return { state, text, setText, parsed, distinct, issues, applySuggestion, applyAllSuggestions, closeIssues, verifyProgress, error, clearError, run, verify }
+  const toggleCard = useCallback((key: string) => {
+    if (stateRef.current === 'printing' || !runRef.current) return
+    setRun(toggleRun(runRef.current, key))
+  }, [setRun])
+
+  const startOver = useCallback(() => {
+    if (stateRef.current === 'printing' || !runRef.current) return
+    setRun(reset(runRef.current)); setError(null); go('ready')
+  }, [setRun, go])
+
+  const packedFor = (key: string): Uint8Array => {
+    let p = packedRef.current.get(key)
+    if (!p) { p = toPacked(thumbsRef.current.get(key)!.bits); packedRef.current.set(key, p) }
+    return p
+  }
+
+  /** Print every pending item, in order. Each call (first start or resume) begins with ESC @. */
+  const print = useCallback(async () => {
+    const printer = services.printer
+    const s = stateRef.current
+    if ((s !== 'ready' && s !== 'paused') || !runRef.current || printer.state !== 'connected') return
+    if (!nextPending(runRef.current) || thumbsRef.current.size !== runRef.current.cards.length) return
+    go('printing'); setError(null)
+    const ac = new AbortController(); abort.current = ac
+    let first = true
+    try {
+      for (;;) {
+        const run = runRef.current!
+        const item = nextPending(run)
+        if (!item) break
+        const bits = thumbsRef.current.get(item.cardKey)!.bits
+        const last = progress(run).remaining === 1
+        const frames = [
+          ...(first ? [escposInit()] : []),
+          ...escposRasterFrames(packedFor(item.cardKey), bits.width, bits.height),
+          escposFeed(last ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS),
+        ]
+        first = false
+        setCurrent({ item, fraction: 0 })
+        await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => setCurrent({ item, fraction: total ? sent / total : 0 }) })
+        setRun(markPrinted(runRef.current!, item))
+      }
+      go('done')
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        setError((printer.state as PrinterState) === 'disconnected' ? PRINTER_MESSAGES.dropped : (e instanceof Error ? e.message : String(e)))
+      }
+      go('paused')
+    } finally {
+      abort.current = null; setCurrent(null)
+    }
+  }, [services.printer, go, setRun])
+
+  const cancel = useCallback(() => { abort.current?.abort() }, [])
+
+  return { state, text, setText, parsed, distinct, issues, applySuggestion, applyAllSuggestions, closeIssues, verifyProgress, error, clearError, run, verify, thumbs, rendering, fontWarning, current, toggleCard, print, cancel, startOver }
 }
 
 export type UseDeck = ReturnType<typeof useDeck>
