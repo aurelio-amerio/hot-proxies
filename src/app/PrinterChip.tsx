@@ -62,9 +62,6 @@ export function PrinterChip({ state, name, onConnect, onDisconnect }: PrinterChi
             clickable={clickable}
             disabled={state === 'unsupported'}
             onClick={clickable ? onClick : undefined}
-            sx={live
-              ? { mr: 1, bgcolor: 'rgba(255,255,255,0.08)' }
-              : { color: 'inherit', borderColor: 'currentColor', mr: 1, '& .MuiChip-icon': { color: 'inherit' } }}
           />
         </span>
       </Tooltip>

@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "build:names": "tsx scripts/build-name-index.ts",
     "vendor:mana": "tsx scripts/vendor-mana.ts",
-    "make:icons": "tsx scripts/make-icons.ts"
+    "make:icons": "tsx scripts/make-icons.ts",
+    "make:header": "tsx scripts/make-header.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

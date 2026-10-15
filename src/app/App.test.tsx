@@ -98,3 +98,18 @@ describe('App printing', () => {
     expect(printer.writes.map((w) => w.length)).toEqual([5, 3])   // header, then feed after cancel
   })
 })
+
+describe('App shell', () => {
+  it('has no app bar: the masthead image and the GitHub link live in the column', () => {
+    render(<App services={services(async () => bolt)} />)
+    expect(screen.queryByRole('banner')).toBeNull()
+    expect(screen.getByRole('img', { name: 'Hot Proxies!' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /github/i })).toHaveAttribute('href', 'https://github.com/aurelio-amerio/hot-proxies')
+  })
+  it('shows the Wizards Fan Content Policy notice in the footer', () => {
+    render(<App services={services(async () => bolt)} />)
+    const notice = screen.getByText(/Not approved\/endorsed by Wizards/)
+    expect(notice).toHaveTextContent('Hot Proxies is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.')
+    expect(screen.getByRole('link', { name: 'Fan Content Policy' })).toHaveAttribute('href', 'https://company.wizards.com/en/legal/fancontentpolicy')
+  })
+})

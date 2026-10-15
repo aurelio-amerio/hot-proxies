@@ -303,7 +303,7 @@ export default defineConfig({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#212121" />
+    <meta name="theme-color" content="#0a1625" />
     <title>Hot Proxies</title>
   </head>
   <body>
@@ -2794,7 +2794,7 @@ export function createBrowserServices(): Services {
 `src/app/theme.ts`:
 ```ts
 import { createTheme } from '@mui/material/styles'
-export const theme = createTheme({ palette: { mode: 'light', primary: { main: '#212121' } } })
+export const theme = createTheme({ palette: { mode: 'light', primary: { main: '#0a1625' } } })
 ```
 
 - [ ] **Step 2: Write the failing useSettings test**
@@ -3272,7 +3272,7 @@ mkdirSync('public/icons', { recursive: true })
 for (const size of [192, 512]) {
   const c = createCanvas(size, size), ctx = c.getContext('2d')
   const r = size * 0.2
-  ctx.fillStyle = '#212121'
+  ctx.fillStyle = '#0a1625'
   ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(size - r, 0); ctx.arcTo(size, 0, size, r, r); ctx.lineTo(size, size - r)
   ctx.arcTo(size, size, size - r, size, r); ctx.lineTo(r, size); ctx.arcTo(0, size, 0, size - r, r); ctx.lineTo(0, r); ctx.arcTo(0, 0, r, 0, r); ctx.fill()
   ctx.fillStyle = '#fff'; ctx.font = `bold ${size * 0.42}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
@@ -3302,7 +3302,7 @@ export default defineConfig({
       includeAssets: ['names.json', 'icons/*.png'],
       manifest: {
         name: 'Hot Proxies', short_name: 'Hot Proxies', description: 'Black-and-white MTG proxies for thermal printers',
-        theme_color: '#212121', background_color: '#ffffff', display: 'standalone', start_url: '/',
+        theme_color: '#0a1625', background_color: '#ffffff', display: 'standalone', start_url: '/',
         icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' }],
       },
       workbox: { globPatterns: ['**/*.{js,css,html,ttf,json,png,svg}'], maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 },

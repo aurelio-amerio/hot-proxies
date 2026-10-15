@@ -9,6 +9,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import type { PrinterState } from '../core/printer/transport'
 import type { BitImage } from '../core/art/types'
 import { bitImageToImageData } from '../core/output/packed'
+import { RULE } from './theme'
 
 export interface PreviewPrintProps { state: PrinterState; progress: number; onPrint(): void; onCancel(): void }
 export interface PreviewProps { bits: BitImage; dotsPerLine: number; dpi: number; print?: PreviewPrintProps }
@@ -27,7 +28,7 @@ export function Preview({ bits, dotsPerLine, dpi, print }: PreviewProps) {
   const widthCss = zoom === 'physical' ? `${((dotsPerLine / dpi) * 25.4).toFixed(2)}mm` : `${bits.width * Number(zoom)}px`
   return (
     <Stack spacing={1} sx={{ alignItems: 'center' }} data-testid="preview">
-      <Box component="canvas" ref={ref} sx={{ width: widthCss, height: 'auto', imageRendering: 'pixelated', border: '1px solid #ccc', background: '#fff' }} />
+      <Box component="canvas" ref={ref} sx={{ width: widthCss, maxWidth: '100%', height: 'auto', imageRendering: 'pixelated', border: `1px solid ${RULE}`, background: '#fff', boxShadow: '0 4px 14px rgba(40, 32, 16, 0.15)' }} />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
         <ToggleButtonGroup size="small" exclusive value={zoom} onChange={(_e, v) => v && setZoom(v)}>
           <ToggleButton value="1">1×</ToggleButton><ToggleButton value="2">2×</ToggleButton><ToggleButton value="physical">Print size</ToggleButton>

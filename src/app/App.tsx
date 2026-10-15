@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
 import Box from '@mui/material/Box'
+import Paper from '@mui/material/Paper'
+import Divider from '@mui/material/Divider'
+import Link from '@mui/material/Link'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
-import Container from '@mui/material/Container'
 import Stack from '@mui/material/Stack'
 import Alert from '@mui/material/Alert'
 import LinearProgress from '@mui/material/LinearProgress'
 import Snackbar from '@mui/material/Snackbar'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { theme } from './theme'
+import { SHEET_SHADOW, theme } from './theme'
 import headerImg from '../assets/header.jpg'
 import type { Services } from './services'
 import { useSettings } from './useSettings'
@@ -23,6 +23,9 @@ import { SearchBox } from './SearchBox'
 import { Preview } from './Preview'
 import { SettingsDrawer } from './SettingsDrawer'
 
+export const REPO_URL = 'https://github.com/aurelio-amerio/hot-proxies'
+export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fancontentpolicy'
+
 export function App({ services }: { services: Services }) {
   const [settings, update, reset] = useSettings(services.storage)
   const { state, card, bits, geometry, errors, render } = useProxy(services, settings)
@@ -31,25 +34,37 @@ export function App({ services }: { services: Services }) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static"><Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>Hot Proxies</Typography>
-        <PrinterChip state={printer.state} name={printer.name} onConnect={printer.connect} onDisconnect={printer.disconnect} />
-        <IconButton color="inherit" aria-label="settings" onClick={() => setDrawer(true)}><SettingsIcon /></IconButton>
-      </Toolbar></AppBar>
-      <Container maxWidth="sm" sx={{ py: 2 }}>
-        <Stack spacing={2}>
-          <Box component="img" src={headerImg} alt="Hot Proxies!" sx={{ display: 'block', width: '100%', height: 'auto' }} />
-          <SearchBox loadNames={services.loadNames} onPick={render} />
-          {state === 'loading' && <LinearProgress />}
-          {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}
-          {geometry?.overflow && <Alert severity="warning">Rules text was clipped to fit.</Alert>}
-          {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
-          {state === 'rendered' && card && bits && (
-            <Preview bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
-              print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
-          )}
+      <Box component="main" sx={{ maxWidth: 640, mx: 'auto', px: { xs: 1.5, sm: 2 }, pt: { xs: 1.5, sm: 4 }, pb: 6 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: SHEET_SHADOW }}>
+          {/* The artwork's background is the sheet colour; multiply hides any residual off-white. */}
+          <Box component="img" src={headerImg} alt="Hot Proxies!" sx={{ display: 'block', width: '100%', height: 'auto', mixBlendMode: 'multiply' }} />
+          <Stack spacing={2} sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <PrinterChip state={printer.state} name={printer.name} onConnect={printer.connect} onDisconnect={printer.disconnect} />
+              <IconButton aria-label="settings" sx={{ color: 'text.primary' }} onClick={() => setDrawer(true)}><SettingsIcon /></IconButton>
+            </Stack>
+            <Divider />
+            <SearchBox loadNames={services.loadNames} onPick={render} />
+            {state === 'loading' && <LinearProgress />}
+            {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}
+            {geometry?.overflow && <Alert severity="warning">Rules text was clipped to fit.</Alert>}
+            {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
+            {state === 'rendered' && card && bits && (
+              <Preview bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
+                print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
+            )}
+          </Stack>
+        </Paper>
+        <Stack spacing={1} sx={{ mt: 2, px: 1 }}>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Ink on paper for 58 mm thermal printers · <Link href={REPO_URL} color="inherit">GitHub</Link>
+          </Typography>
+          <Typography variant="caption" color="text.secondary" align="center" sx={{ display: 'block' }}>
+            Hot Proxies is unofficial Fan Content permitted under the <Link href={FAN_CONTENT_POLICY_URL} color="inherit">Fan Content Policy</Link>.
+            Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
+          </Typography>
         </Stack>
-      </Container>
+      </Box>
       <SettingsDrawer open={drawer} onClose={() => setDrawer(false)} settings={settings} update={update} reset={reset} />
       <Snackbar open={!!printer.error} autoHideDuration={6000} onClose={printer.clearError}>
         <Alert severity="error" onClose={printer.clearError} variant="filled">{printer.error}</Alert>

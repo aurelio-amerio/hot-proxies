@@ -16,7 +16,7 @@ export default defineConfig({
       includeAssets: ['names.json', 'icons/*.png'],
       manifest: {
         name: 'Hot Proxies', short_name: 'Hot Proxies', description: 'Black-and-white MTG proxies for thermal printers',
-        theme_color: '#212121', background_color: '#fefffe', display: 'standalone', start_url: base, scope: base,
+        theme_color: '#0a1625', background_color: '#f5f3e8', display: 'standalone', start_url: base, scope: base,
         icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' }],
       },
       workbox: { globPatterns: ['**/*.{js,css,html,ttf,json,png,svg}'], maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 },
