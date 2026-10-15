@@ -12,8 +12,6 @@ import Alert from '@mui/material/Alert'
 import LinearProgress from '@mui/material/LinearProgress'
 import Snackbar from '@mui/material/Snackbar'
 import SettingsIcon from '@mui/icons-material/Settings'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { SHEET_SHADOW, theme } from './theme'
 import headerImg from '../assets/header.jpg'
 import type { Services } from './services'
@@ -27,6 +25,7 @@ import { SettingsDrawer } from './SettingsDrawer'
 import { useMode } from './useMode'
 import { useDeck } from './useDeck'
 import { DeckPanel } from './DeckPanel'
+import { ModeSwitch } from './ModeSwitch'
 
 export const REPO_URL = 'https://github.com/aurelio-amerio/hot-proxies'
 export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fancontentpolicy'
@@ -50,11 +49,10 @@ export function App({ services }: { services: Services }) {
           <Box component="img" src={headerImg} alt="Hot Proxies!" sx={{ display: 'block', width: '100%', height: 'auto', mixBlendMode: 'multiply' }} />
           <Stack spacing={2} sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-              <PrinterChip state={printer.state} name={printer.name} onConnect={printer.connect} onDisconnect={printer.disconnect} />
-              <ToggleButtonGroup size="small" exclusive value={mode} onChange={(_e, v) => v && setMode(v)} aria-label="Mode">
-                <ToggleButton value="card">Card</ToggleButton>
-                <ToggleButton value="deck">Deck</ToggleButton>
-              </ToggleButtonGroup>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <PrinterChip state={printer.state} name={printer.name} onConnect={printer.connect} onDisconnect={printer.disconnect} />
+                <ModeSwitch mode={mode} onChange={setMode} />
+              </Stack>
               <IconButton aria-label="settings" sx={{ color: 'text.primary' }} onClick={() => setDrawer(true)}><SettingsIcon /></IconButton>
             </Stack>
             <Divider />

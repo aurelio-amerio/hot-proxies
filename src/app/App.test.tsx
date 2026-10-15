@@ -121,7 +121,11 @@ describe('App modes', () => {
     s.storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => { store.set(k, v) } }
     render(<App services={s} />)
     expect(screen.getByRole('combobox')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Card' })).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    expect(screen.getByRole('button', { name: 'Deck' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Card' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('mode-switch').previousElementSibling).toContainElement(screen.getByRole('button', { name: 'Connect printer' }))
     expect(screen.getByRole('textbox', { name: 'Deck list' })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).toBeNull()
     expect(store.get('hot-proxies.mode.v1')).toBe('"deck"')
