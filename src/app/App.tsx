@@ -12,6 +12,8 @@ import Alert from '@mui/material/Alert'
 import LinearProgress from '@mui/material/LinearProgress'
 import Snackbar from '@mui/material/Snackbar'
 import SettingsIcon from '@mui/icons-material/Settings'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { SHEET_SHADOW, theme } from './theme'
 import headerImg from '../assets/header.jpg'
 import type { Services } from './services'
@@ -22,6 +24,9 @@ import { PrinterChip } from './PrinterChip'
 import { SearchBox } from './SearchBox'
 import { Preview } from './Preview'
 import { SettingsDrawer } from './SettingsDrawer'
+import { useMode } from './useMode'
+import { useDeck } from './useDeck'
+import { DeckPanel } from './DeckPanel'
 
 export const REPO_URL = 'https://github.com/aurelio-amerio/hot-proxies'
 export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fancontentpolicy'
@@ -31,6 +36,11 @@ export function App({ services }: { services: Services }) {
   const { state, card, bits, geometry, errors, render } = useProxy(services, settings)
   const [drawer, setDrawer] = useState(false)
   const printer = usePrinter(services)
+  const [mode, setMode] = useMode(services.storage)
+  const deck = useDeck(services, settings)
+  // Verify errors show inline in the deck panel; the snackbar carries print failures from either mode.
+  const snack = printer.error ?? (deck.state === 'paused' ? deck.error : null)
+  const clearSnack = () => { printer.clearError(); deck.clearError() }
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -39,11 +49,16 @@ export function App({ services }: { services: Services }) {
           {/* The artwork's background is the sheet colour; multiply hides any residual off-white. */}
           <Box component="img" src={headerImg} alt="Hot Proxies!" sx={{ display: 'block', width: '100%', height: 'auto', mixBlendMode: 'multiply' }} />
           <Stack spacing={2} sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
-            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <PrinterChip state={printer.state} name={printer.name} onConnect={printer.connect} onDisconnect={printer.disconnect} />
+              <ToggleButtonGroup size="small" exclusive value={mode} onChange={(_e, v) => v && setMode(v)} aria-label="Mode">
+                <ToggleButton value="card">Card</ToggleButton>
+                <ToggleButton value="deck">Deck</ToggleButton>
+              </ToggleButtonGroup>
               <IconButton aria-label="settings" sx={{ color: 'text.primary' }} onClick={() => setDrawer(true)}><SettingsIcon /></IconButton>
             </Stack>
             <Divider />
+            {mode === 'card' && (<>
             <SearchBox loadNames={services.loadNames} onPick={render} />
             {state === 'loading' && <LinearProgress />}
             {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}
@@ -53,6 +68,8 @@ export function App({ services }: { services: Services }) {
               <Preview bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
                 print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
             )}
+            </>)}
+            {mode === 'deck' && <DeckPanel deck={deck} printerState={printer.state} settings={settings} />}
           </Stack>
         </Paper>
         <Stack spacing={1} sx={{ mt: 2, px: 1 }}>
@@ -66,8 +83,8 @@ export function App({ services }: { services: Services }) {
         </Stack>
       </Box>
       <SettingsDrawer open={drawer} onClose={() => setDrawer(false)} settings={settings} update={update} reset={reset} />
-      <Snackbar open={!!printer.error} autoHideDuration={6000} onClose={printer.clearError}>
-        <Alert severity="error" onClose={printer.clearError} variant="filled">{printer.error}</Alert>
+      <Snackbar open={!!snack} autoHideDuration={6000} onClose={clearSnack}>
+        <Alert severity="error" onClose={clearSnack} variant="filled">{snack}</Alert>
       </Snackbar>
     </ThemeProvider>
   )

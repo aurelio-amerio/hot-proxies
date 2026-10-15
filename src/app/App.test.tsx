@@ -113,3 +113,44 @@ describe('App shell', () => {
     expect(screen.getByRole('link', { name: 'Fan Content Policy' })).toHaveAttribute('href', 'https://company.wizards.com/en/legal/fancontentpolicy')
   })
 })
+
+describe('App modes', () => {
+  it('starts in Card mode, switches to Deck and persists the choice', async () => {
+    const store = new Map<string, string>()
+    const s = services(async () => bolt)
+    s.storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => { store.set(k, v) } }
+    render(<App services={s} />)
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    expect(screen.getByRole('textbox', { name: 'Deck list' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(store.get('hot-proxies.mode.v1')).toBe('"deck"')
+  })
+  it('opens in Deck mode when that was stored', () => {
+    const s = services(async () => bolt)
+    s.storage = { getItem: (k) => (k === 'hot-proxies.mode.v1' ? '"deck"' : null), setItem: () => {} }
+    render(<App services={s} />)
+    expect(screen.getByRole('textbox', { name: 'Deck list' })).toBeInTheDocument()
+  })
+  it('keeps the deck text when switching modes back and forth', async () => {
+    render(<App services={services(async () => bolt)} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Deck list' }), '4 Lightning Bolt')
+    await userEvent.click(screen.getByRole('button', { name: 'Card' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    expect(screen.getByRole('textbox', { name: 'Deck list' })).toHaveValue('4 Lightning Bolt')
+  })
+  it('shows a deck print drop in the shared snackbar', async () => {
+    const printer = fakePrinter('connected'); printer.name = 'PT210_FAKE'
+    const origWrite = printer.write.bind(printer)
+    let n = 0
+    printer.write = async (b) => { if (++n === 2) { printer.set('disconnected'); throw new Error('gatt gone') } await origWrite(b) }
+    render(<App services={services(async () => bolt, printer)} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Deck list' }), '1 Lightning Bolt')
+    await userEvent.click(screen.getByRole('button', { name: 'Verify' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print 1 cards' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'Print 1 cards' }))
+    await waitFor(() => expect(screen.getByText('Printer disconnected during printing. Reconnect and print again.')).toBeInTheDocument())
+  })
+})

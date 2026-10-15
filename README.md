@@ -26,6 +26,19 @@ The app prints over Web Bluetooth (BLE GATT), which works in Chrome on Android a
 2. Render a card and press **Print**. The card is sent as ESC/POS raster in 100-byte chunks.
 3. If the printer powers off or goes out of range the chip shows "tap to reconnect".
 
+### Printing a deck
+
+Switch to **Deck** in the header. Paste a list, one card per line, in any of the usual export
+formats (`4 Lightning Bolt`, `4x Lightning Bolt`, `1 Sol Ring (C21) 263`). `Sideboard`,
+`Maybeboard`, `Considering` and `Tokens` sections are skipped; `Commander` cards are printed.
+Press **Verify**: every name is resolved through Scryfall, and unresolved lines are listed with a
+suggested fix you can apply with one tap. Then untick any cards you do not want, and press
+**Print**. Cards print back to back with a short gap for cutting. Cancel or a lost connection
+pauses the run; **Resume** continues from the card that did not finish.
+
+Moxfield deck links cannot be imported directly (Moxfield's API does not allow browser requests
+from other sites). Open the deck on Moxfield, choose Export, copy the list and paste it.
+
 Blank paper of the right length means the roll is in backwards: thermal paper prints on one
 side only.
 

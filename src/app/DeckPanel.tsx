@@ -64,7 +64,8 @@ export function DeckPanel({ deck, printerState, settings }: DeckPanelProps) {
           <LinearProgress variant="determinate" value={deck.verifyProgress.total ? (100 * deck.verifyProgress.done) / deck.verifyProgress.total : 0} aria-label="Verify progress" />
         </Stack>
       )}
-      {deck.error && <Alert severity="error" onClose={deck.clearError}>{deck.error}</Alert>}
+      {/* Print failures (paused) go to App's snackbar; only verify errors show here. */}
+      {deck.error && state !== 'paused' && <Alert severity="error" onClose={deck.clearError}>{deck.error}</Alert>}
       {deck.fontWarning && <Alert severity="info">{deck.fontWarning}</Alert>}
       {run && (
         <>
