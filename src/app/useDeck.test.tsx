@@ -217,7 +217,7 @@ describe('useDeck print', () => {
     expect(result.current.state).toBe('done')
     expect(countResets(printer)).toBe(1)
   })
-  it('cancel pauses after the current card, leaves it pending, and resume reprints it with a new init', async () => {
+  it('cancel pauses after the current card, leaves it pending, and resume reprints it without a second ESC @ (same connection)', async () => {
     const printer = fakePrinter('connected')
     const { result } = await verified('3 Lightning Bolt', fakeServices({ printer }))
     let seenFirstChunk = false
@@ -232,6 +232,37 @@ describe('useDeck print', () => {
     printer.write = origWrite
     await act(() => result.current.print())
     expect(result.current.state).toBe('done')
+    expect(countResets(printer)).toBe(1)
+  })
+  it('re-including a card after the run is done lets it print on its own', async () => {
+    const printer = fakePrinter('connected')
+    const { result } = await verified('1 Lightning Bolt\n1 Forest', fakeServices({ printer }))
+    act(() => result.current.toggleCard('forest'))
+    await act(() => result.current.print())
+    expect(result.current.state).toBe('done')
+    act(() => result.current.toggleCard('forest'))
+    expect(result.current.state).toBe('paused')
+    await act(() => result.current.print())
+    expect(result.current.state).toBe('done')
+    expect(result.current.run!.items.map((i) => i.status)).toEqual(['printed', 'printed'])
+  })
+  it('deselecting every remaining card of a paused run finishes it', async () => {
+    const printer = fakePrinter('connected')
+    const { result } = await verified('1 Lightning Bolt\n1 Forest', fakeServices({ printer }))
+    const origWrite = printer.write.bind(printer)
+    printer.write = async (b) => { await origWrite(b); if (b[0] === 0x1b && b[1] === 0x64) result.current.cancel() }   // cancel after the first card's feed
+    await act(() => result.current.print())
+    expect(result.current.state).toBe('paused')
+    expect(result.current.run!.items.map((i) => i.status)).toEqual(['printed', 'pending'])
+    act(() => result.current.toggleCard('forest'))
+    expect(result.current.state).toBe('done')
+  })
+  it('starts every new run (after Start over) with ESC @', async () => {
+    const printer = fakePrinter('connected')
+    const { result } = await verified('1 Lightning Bolt', fakeServices({ printer }))
+    await act(() => result.current.print())
+    act(() => result.current.startOver())
+    await act(() => result.current.print())
     expect(countResets(printer)).toBe(2)
   })
   it('a dropped connection pauses with the message, the card stays pending, and resume continues after reconnecting', async () => {
@@ -248,6 +279,7 @@ describe('useDeck print', () => {
     await act(() => result.current.print())
     expect(result.current.state).toBe('done')
     expect(result.current.run!.items.map((i) => i.status)).toEqual(['printed', 'printed'])
+    expect(countResets(printer)).toBe(2)   // the printer may have power-cycled: resume re-initialises
   })
   it('does nothing when the printer is not connected', async () => {
     const printer = fakePrinter('disconnected')

@@ -44,12 +44,16 @@ export function useDeck(services: Services, settings: Settings) {
   const thumbsRef = useRef<Map<string, DeckThumb>>(new Map())
   const packedRef = useRef<Map<string, Uint8Array>>(new Map())
   const abort = useRef<AbortController | null>(null)
+  /** ESC @ is due: a new run, Start over, or the connection dropped (the printer may have power-cycled). Never after raster data on the same connection: it clears the print buffer. */
+  const needsInit = useRef(true)
 
   const parsed = useMemo<ParsedDeck>(() => parseDeckList(text), [text])
   const distinct = useMemo<DistinctEntry[]>(() => distinctCards(parsed.entries), [parsed])
 
   const go = useCallback((s: DeckState) => { stateRef.current = s; setState(s) }, [])
   const setRun = useCallback((r: DeckRun | null) => { runRef.current = r; setRunState(r) }, [])
+
+  useEffect(() => services.printer.onStateChange((s) => { if (s === 'disconnected') needsInit.current = true }), [services.printer])
 
   // Render one BitImage per distinct card whenever the cards or settings change. Statuses are untouched.
   const cards = run?.cards ?? null
@@ -131,7 +135,7 @@ export function useDeck(services: Services, settings: Settings) {
     if (my !== seq.current) return
     setVerifyProgress(null)
     if (found.length) { found.sort((a, b) => a.line - b.line); setIssues(found); go('editing') }
-    else { setRun(createRun(cards)); go('ready') }
+    else { setRun(createRun(cards)); needsInit.current = true; go('ready') }
   }, [text, parsed, distinct, services, go, setRun])
 
   const applySuggestion = useCallback((issue: Extract<DeckIssue, { kind: 'not-found' }>) => {
@@ -153,12 +157,17 @@ export function useDeck(services: Services, settings: Settings) {
 
   const toggleCard = useCallback((key: string) => {
     if (stateRef.current === 'printing' || !runRef.current) return
-    setRun(toggleRun(runRef.current, key))
-  }, [setRun])
+    const next = toggleRun(runRef.current, key)
+    setRun(next)
+    // A started run follows what is left: re-ticking a card after "done" resumes, unticking the rest of a paused run finishes it.
+    if (stateRef.current === 'paused' || stateRef.current === 'done') {
+      go(nextPending(next) ? 'paused' : progress(next).printed > 0 ? 'done' : 'ready')
+    }
+  }, [setRun, go])
 
   const startOver = useCallback(() => {
     if (stateRef.current === 'printing' || !runRef.current) return
-    setRun(reset(runRef.current)); setError(null); go('ready')
+    setRun(reset(runRef.current)); needsInit.current = true; setError(null); go('ready')
   }, [setRun, go])
 
   const packedFor = (key: string): Uint8Array => {
@@ -167,7 +176,7 @@ export function useDeck(services: Services, settings: Settings) {
     return p
   }
 
-  /** Print every pending item, in order. Each call (first start or resume) begins with ESC @. */
+  /** Print every pending item, in order. A run starts with ESC @; a resume repeats it only after a dropped connection. */
   const print = useCallback(async () => {
     const printer = services.printer
     const s = stateRef.current
@@ -175,7 +184,6 @@ export function useDeck(services: Services, settings: Settings) {
     if (!nextPending(runRef.current) || thumbsRef.current.size !== runRef.current.cards.length) return
     go('printing'); setError(null)
     const ac = new AbortController(); abort.current = ac
-    let first = true
     try {
       for (;;) {
         const run = runRef.current!
@@ -183,14 +191,17 @@ export function useDeck(services: Services, settings: Settings) {
         if (!item) break
         const bits = thumbsRef.current.get(item.cardKey)!.bits
         const last = progress(run).remaining === 1
+        const init = needsInit.current ? escposInit() : null
         const frames = [
-          ...(first ? [escposInit()] : []),
+          ...(init ? [init] : []),
           ...escposRasterFrames(packedFor(item.cardKey), bits.width, bits.height),
           escposFeed(last ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS),
         ]
-        first = false
         setCurrent({ item, fraction: 0 })
-        await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => setCurrent({ item, fraction: total ? sent / total : 0 }) })
+        await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => {
+          if (init && sent >= init.length) needsInit.current = false
+          setCurrent({ item, fraction: total ? sent / total : 0 })
+        } })
         setRun(markPrinted(runRef.current!, item))
       }
       go('done')

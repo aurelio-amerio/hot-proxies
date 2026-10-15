@@ -10,7 +10,7 @@ const SKIP_HEADERS = new Set(['sideboard', 'maybeboard', 'considering', 'tokens'
 const MOXFIELD = /https?:\/\/(?:www\.)?moxfield\.com\/decks\/[A-Za-z0-9_-]+/
 const COUNT = /^(\d+)\s*[xX]?\s+(\S.*)$/
 const FINISH_FLAGS = /(\s+\*[A-Za-z]\*)+$/
-const SET_SUFFIX = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★]+)?$/
+const SET_SUFFIX = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★-]+)?$/   // collector numbers: 263, 240a, 1★, C21-263 (The List)
 
 const splitLines = (text: string) => text.split('\n').map((l) => l.replace(/\r$/, ''))
 

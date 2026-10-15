@@ -12,6 +12,9 @@ describe('parseDeckList', () => {
   it('strips set and collector suffixes, including letters and stars', () => {
     expect(names('1 Sol Ring (C21) 263\n1 Forest (UNF) 240a\n1 Island (SLD) 1★\n1 Opt (ELD)')).toEqual(['1 Sol Ring', '1 Forest', '1 Island', '1 Opt'])
   })
+  it('strips set suffixes whose collector number has a hyphen (The List)', () => {
+    expect(names('1 Sol Ring (PLST) C21-263\n1 Opt (PLST) ELD-59 *F*')).toEqual(['1 Sol Ring', '1 Opt'])
+  })
   it('strips Moxfield finish markers', () => {
     expect(names('1 Sol Ring (C21) 263 *F*\n1 Opt *E*')).toEqual(['1 Sol Ring', '1 Opt'])
   })
