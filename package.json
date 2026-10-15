@@ -13,7 +13,8 @@
     "build:names": "tsx scripts/build-name-index.ts",
     "vendor:mana": "tsx scripts/vendor-mana.ts",
     "make:icons": "tsx scripts/make-icons.ts",
-    "make:header": "tsx scripts/make-header.ts"
+    "make:header": "tsx scripts/make-header.ts",
+    "check:run": "tsx scripts/make-run-check.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

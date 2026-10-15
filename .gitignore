@@ -163,3 +163,6 @@ dist/
 dev-dist/
 src/assets/fonts/local/
 tests/golden/__diff__/
+
+# manual printer-check streams (scripts/make-run-check.ts)
+tmp/
