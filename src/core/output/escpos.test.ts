@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { encodeEscPosRaster, encodeEscPosFrames } from './escpos'
+import { encodeEscPosRaster, encodeEscPosFrames, escposInit, escposRasterFrames, escposFeed } from './escpos'
+import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../printer'
 import { toPacked } from './packed'
 
 const packedFor = (width: number, height: number) => toPacked({ width, height, bits: new Uint8Array(width * height) })
@@ -50,5 +51,36 @@ describe('encodeEscPosFrames', () => {
     const joined = new Uint8Array(frames.reduce((a, f) => a + f.length, 0)); let o = 0
     for (const f of frames) { joined.set(f, o); o += f.length }
     expect(Array.from(joined)).toEqual(Array.from(encodeEscPosRaster(packedFor(200, 70), 200, 70)))
+  })
+})
+
+describe('escpos helpers', () => {
+  it('escposInit is ESC @ then ESC a 0', () => {
+    expect(Array.from(escposInit())).toEqual([0x1b, 0x40, 0x1b, 0x61, 0x00])
+  })
+  it('escposFeed is ESC d n', () => {
+    expect(Array.from(escposFeed(2))).toEqual([0x1b, 0x64, 0x02])
+    expect(Array.from(escposFeed(7))).toEqual([0x1b, 0x64, 0x07])
+  })
+  it('escposRasterFrames emits only the GS v 0 blocks', () => {
+    const frames = escposRasterFrames(packedFor(384, 536), 384, 536)
+    expect(frames.length).toBe(9)
+    expect(Array.from(frames[0].subarray(0, 8))).toEqual([0x1d, 0x76, 0x30, 0x00, 48, 0, 64, 0])
+    expect(frames[8].length).toBe(8 + 24 * 48)
+  })
+  it('init + raster + feed(FEED_LINES_AFTER) is exactly encodeEscPosFrames', () => {
+    const packed = packedFor(200, 70)
+    const composed = [escposInit(), ...escposRasterFrames(packed, 200, 70), escposFeed(FEED_LINES_AFTER)]
+    expect(composed.map((f) => Array.from(f))).toEqual(encodeEscPosFrames(packed, 200, 70).map((f) => Array.from(f)))
+  })
+  it('a two-card run has exactly one ESC @ and a gap feed between the cards', () => {
+    const packed = packedFor(8, 1)
+    const run = [escposInit(), ...escposRasterFrames(packed, 8, 1), escposFeed(FEED_LINES_BETWEEN_CARDS), ...escposRasterFrames(packed, 8, 1), escposFeed(FEED_LINES_AFTER)]
+    const joined = new Uint8Array(run.reduce((a, f) => a + f.length, 0)); let o = 0
+    for (const f of run) { joined.set(f, o); o += f.length }
+    let resets = 0
+    for (let i = 0; i + 1 < joined.length; i++) if (joined[i] === 0x1b && joined[i + 1] === 0x40) resets++
+    expect(resets).toBe(1)
+    expect(Array.from(run[2])).toEqual([0x1b, 0x64, FEED_LINES_BETWEEN_CARDS])
   })
 })

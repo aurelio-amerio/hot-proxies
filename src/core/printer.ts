@@ -11,3 +11,5 @@ export const RASTER_BLOCK_ROWS = 64
 export const FEED_LINES_AFTER = 2
 /** Bytes per BLE write. 100 printed a full card correctly on the PT-210 (2026-10-14). */
 export const BLE_CHUNK_BYTES = 100
+/** Lines fed between cards in a deck run (`ESC d n`) so the cards can be cut apart. Starts at FEED_LINES_AFTER's value; tuned in Task 2 of the deck-printing plan. */
+export const FEED_LINES_BETWEEN_CARDS = 2
