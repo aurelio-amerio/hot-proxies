@@ -7,7 +7,7 @@ import { tokenize } from '../text/tokenize'
 import { wrapText } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { columnCandidates } from './candidates'
-import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor } from './bars'
+import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor, costCodes } from './bars'
 import type { Geometry, Rect, SectionGeometry } from './fit'
 import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL, BADGE, BADGE_GUTTER, SECTION_GAP } from './constants'
 
@@ -16,7 +16,6 @@ type ColumnsSheet = Extract<Sheet, { kind: 'columns' }>
 const BADGE_STEP = BADGE + 2   // badge plus the 2-dot gap below it
 /** Offset that centres the first badge on the section's first text line. */
 const badgeTop = (lh: number) => Math.max(0, Math.round((lh - BADGE) / 2))
-const costCodes = (cost = '') => (cost.match(/\{([^}]+)\}/g) ?? []).map((m) => m.slice(1, -1))
 
 interface Stack { sections: SectionGeometry[]; bottoms: number[] }
 

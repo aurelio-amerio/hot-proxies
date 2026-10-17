@@ -2,7 +2,7 @@ import type { Face, Stat } from '../card/types'
 import { statLabel } from '../card/types'
 import type { Ctx2D } from '../env'
 import type { Geometry, Rect } from '../layout/fit'
-import type { NameBarFit } from '../layout/bars'
+import { costCodes, type NameBarFit } from '../layout/bars'
 import type { StampCache } from '../symbols/stamp'
 import { drawLines } from '../text/draw'
 import { NAME_H, STAT_PAD, TEXT_PAD } from '../layout/constants'
@@ -18,13 +18,14 @@ export function drawNameBar(ctx: Ctx2D, bar: NameBarFit & { costSymbolSize: numb
   strokeRect(ctx, bar.nameBar, 2)
   ctx.fillStyle = '#000'; ctx.font = `bold ${bar.nameFontSize}px ${family}`; ctx.textBaseline = 'alphabetic'
   ctx.fillText(face.name, bar.nameBar.x + 8, bar.nameBar.y + Math.round(NAME_H * 0.68))
-  const codes = (face.manaCost.match(/\{([^}]+)\}/g) ?? []).map((m) => m.slice(1, -1))
-  if (codes.length) {
-    const step = bar.costSymbolSize + 3
-    const y = bar.costOnSecondLine ? bar.nameBar.y + NAME_H : bar.nameBar.y + Math.round((NAME_H - bar.costSymbolSize) / 2)
-    let x = bar.nameBar.x + bar.nameBar.w - 8 - codes.length * step + 3
-    for (const code of codes) { ctx.drawImage(stamps.get(code, bar.costSymbolSize).canvas, x, y); x += step }
-  }
+  const y = bar.costOnSecondLine ? bar.nameBar.y + NAME_H : bar.nameBar.y + Math.round((NAME_H - bar.costSymbolSize) / 2)
+  drawCostRight(ctx, costCodes(face.manaCost), bar.nameBar.x + bar.nameBar.w - 8, y, bar.costSymbolSize, 3, stamps)
+}
+
+/** Cost symbols in a row, `gap` dots apart, the last one ending at `right`. */
+export function drawCostRight(ctx: Ctx2D, codes: string[], right: number, y: number, size: number, gap: number, stamps: StampCache): void {
+  let x = right - codes.length * (size + gap) + gap
+  for (const code of codes) { ctx.drawImage(stamps.get(code, size).canvas, x, y); x += size + gap }
 }
 
 /** Type bar: frame plus the type line, clipped to the bar. */

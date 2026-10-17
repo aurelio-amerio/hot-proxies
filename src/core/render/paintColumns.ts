@@ -4,7 +4,7 @@ import type { Ctx2D } from '../env'
 import type { Geometry } from '../layout/fit'
 import type { StampCache } from '../symbols/stamp'
 import { drawLines } from '../text/draw'
-import { drawNameBar, drawTypeBar, drawStatBox, strokeRect } from './parts'
+import { drawNameBar, drawTypeBar, drawStatBox, drawCostRight, strokeRect } from './parts'
 import { TEXT_PAD, BADGE, SECTION_RULE } from '../layout/constants'
 
 /** Columns sheet: bars, text column with its sections, the art column's frame and the stat box. The art is blitted by `paint`. */
@@ -31,10 +31,7 @@ export function paintColumns(ctx: Ctx2D, sheet: Extract<Sheet, { kind: 'columns'
       if (h.statLabel) {
         ctx.fillText(h.statLabel, right - ctx.measureText(h.statLabel).width, baseline)
       } else if (h.costCodes.length) {
-        const step = g.symbolSize + 2
-        let x = right - h.costCodes.length * step
-        const y = h.y + Math.round((g.lineHeight - g.symbolSize) / 2)
-        for (const code of h.costCodes) { ctx.drawImage(stamps.get(code, g.symbolSize).canvas, x + 1, y); x += step }
+        drawCostRight(ctx, h.costCodes, right - 1, h.y + Math.round((g.lineHeight - g.symbolSize) / 2), g.symbolSize, 2, stamps)
       }
     }
     for (const b of sec.badges) ctx.drawImage(stamps.get(b.code, BADGE).canvas, b.rect.x, b.rect.y)

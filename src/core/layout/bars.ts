@@ -9,11 +9,12 @@ export const symbolSizeFor = (fontSize: number) => Math.round(fontSize * 0.95)
 
 export interface NameBarFit { nameBar: Rect; nameFontSize: number; costOnSecondLine: boolean }
 
-const symbolCount = (cost: string) => (cost.match(/\{[^}]+\}/g) ?? []).length
+/** The symbol codes of a mana cost, "{2}{U}" -> ["2", "U"]. */
+export const costCodes = (cost = '') => (cost.match(/\{([^}]+)\}/g) ?? []).map((m) => m.slice(1, -1))
 
 /** Name bar at (x, y) with width w: shrink the name to fit beside the cost, or move the cost under it. */
 export function fitNameBar(ctx: Ctx2D, face: Pick<Face, 'name' | 'manaCost'>, baseSize: number, family: string, x: number, y: number, w: number): NameBarFit {
-  const costW = symbolCount(face.manaCost) * (COST_SYMBOL + 3)
+  const costW = costCodes(face.manaCost).length * (COST_SYMBOL + 3)
   const barInner = w - 16
   const costOnSecondLine = costW > barInner / 2
   let nameFontSize = baseSize

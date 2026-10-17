@@ -4,7 +4,8 @@ import type { Ctx2D } from '../env'
 import type { Geometry } from '../layout/fit'
 import type { StampCache } from '../symbols/stamp'
 import { drawLines } from '../text/draw'
-import { drawFace, drawStatBox, strokeRect } from './parts'
+import { drawFace, drawStatBox, drawCostRight, strokeRect } from './parts'
+import { costCodes } from '../layout/bars'
 import { SUB_PAD, SUB_TYPE_H } from '../layout/constants'
 
 /** Stacked sheet: the main face as a standard card, then the sub box (header, type row, text, stat). The art is blitted by `paint`. */
@@ -26,11 +27,7 @@ export function paintStacked(ctx: Ctx2D, sheet: Extract<Sheet, { kind: 'stacked'
     ctx.fillText(sub.headerStat, right - w, baseline)
     costRight = right - w - 6
   }
-  const codes = (face.manaCost.match(/\{([^}]+)\}/g) ?? []).map((m) => m.slice(1, -1))
-  const step = g.symbolSize + 2
-  let x = costRight - codes.length * step
-  const y = sub.nameY + Math.round((g.lineHeight - g.symbolSize) / 2)
-  for (const code of codes) { ctx.drawImage(stamps.get(code, g.symbolSize).canvas, x + 1, y); x += step }
+  drawCostRight(ctx, costCodes(face.manaCost), costRight - 1, sub.nameY + Math.round((g.lineHeight - g.symbolSize) / 2), g.symbolSize, 2, stamps)
 
   // type row, clipped to the box like the type bar
   if (sub.typeY !== undefined) {
