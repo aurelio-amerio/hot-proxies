@@ -47,10 +47,12 @@ export function fitStacked(sheet: StackedSheet, s: Settings, env: RenderEnv): Ge
   }
 
   let chosen: { subG: SubGeometry; boxes: FaceBoxes; lines: Line[]; textSize: number; artH: number; stripped: boolean; overflow: boolean } | undefined
-  for (const cand of stackedCandidates(s.textSize, s.stripReminder)) {
+  const cands = stackedCandidates(s.textSize, s.stripReminder)
+  for (const [i, cand] of cands.entries()) {
     const subText = cand.stripped ? stripReminder(sub.oracleText) : sub.oracleText
     let l = layout(cand.textSize, cand.artH, cand.stripped, subText)
     if (l.lines.length <= l.linesAvail) { chosen = { ...l, ...cand, overflow: false }; break }
+    if (i < cands.length - 1) continue
     // overflow: give the main text room by clipping the sub text first (down to one line), then clip the main text
     for (let k = l.subG.lines.length - 1; k >= 1 && l.lines.length > l.linesAvail; k--) l = layout(cand.textSize, cand.artH, cand.stripped, subText, k)
     chosen = { ...l, lines: l.lines.slice(0, Math.max(1, l.linesAvail)), ...cand, overflow: true }

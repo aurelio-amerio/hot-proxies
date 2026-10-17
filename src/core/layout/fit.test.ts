@@ -148,6 +148,21 @@ describe('fit', () => {
     const g = fit({ ...c, face: { ...c.face, oracleText: Array(160).fill('word').join(' ') } }, S, nodeEnv)
     expect(g.art).toBeUndefined(); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN); expect(g.typeBar.y).toBe(g.nameBar.y + g.nameBar.h + GAP)
   })
+  it('stacked: on overflow the sub text is clipped first, down to one line, then the main text', () => {
+    const c = card('bonecrusher') as Extract<Sheet, { kind: 'stacked' }>
+    const long = Array(600).fill('word').join(' ')
+    const g = fit({ ...c, face: { ...c.face, oracleText: long }, sub: { ...c.sub, oracleText: Array(60).fill('word').join(' ') } }, S, nodeEnv)
+    expect(g.overflow).toBe(true); expect(g.textFontSize).toBe(TEXT_FLOOR); expect(g.sub!.lines.length).toBe(1)
+    expect(g.textBox.y + g.textBox.h + GAP).toBe(g.sub!.box.y); expect(g.sub!.box.y + g.sub!.box.h).toBe(536 - 8)
+  })
+  it('stacked: on overflow a short main text stays whole while the sub text is clipped', () => {
+    const c = card('bonecrusher') as Extract<Sheet, { kind: 'stacked' }>
+    const g = fit({ ...c, face: { ...c.face, oracleText: Array(10).fill('word').join(' ') }, sub: { ...c.sub, oracleText: Array(600).fill('word').join(' ') } }, S, nodeEnv)
+    expect(g.overflow).toBe(true); expect(g.sub!.lines.length).toBeGreaterThan(1)
+    const words = g.textLines.flatMap((l) => l.items).flatMap((it) => it.kind === 'text' ? it.text.split(/\s+/).filter(Boolean) : [])
+    expect(words).toHaveLength(10)
+    expect(g.textBox.y + g.textBox.h + GAP).toBe(g.sub!.box.y)
+  })
   it('split: Fire // Ice is two halves with the art between them', () => {
     const g = fit(card('fire-ice'), S, nodeEnv)
     expect(g.kind).toBe('split'); expect(g.art!.h).toBe(SPLIT_ART_MAX); expect(g.textFontSize).toBe(S.textSize)
