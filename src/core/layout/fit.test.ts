@@ -4,8 +4,8 @@ import { nodeEnv } from '../../../tests/nodeEnv'
 import { fit } from './fit'
 import { normalizeScryfall } from '../card/normalize'
 import { DEFAULT_SETTINGS } from '../settings'
-import { standardSheet, type CardData } from '../card/types'
-import { ART_MAX, ART_MID, ART_MIN, TEXT_MIN, TEXT_FLOOR } from './constants'
+import { standardSheet, type CardData, type Sheet } from '../card/types'
+import { ART_MAX, ART_MID, ART_MIN, TEXT_MIN, TEXT_FLOOR, COL_ART_MAX, GAP, BADGE } from './constants'
 
 const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8'))).sheets[0]
 const synthetic = (words: number, extra: Partial<CardData> = {}): CardData => ({
@@ -88,5 +88,50 @@ describe('fit', () => {
   it('respects a custom dots-per-line', () => {
     const g = fit(card('bolt'), { ...S, dotsPerLine: 576 }, nodeEnv)
     expect(g.card).toEqual({ w: 576, h: 805 })
+  })
+  it('columns: Benalia keeps base text and the widest art column', () => {
+    // reminder kept, so the lore-counter paragraph is a section of its own
+    const g = fit(card('benalia'), { ...S, stripReminder: false }, nodeEnv)
+    expect(g.kind).toBe('columns'); expect(g.art!.w).toBe(COL_ART_MAX); expect(g.textFontSize).toBe(S.textSize)
+    expect(g.typeBar.y + g.typeBar.h).toBe(536 - 8); expect(g.art!.x).toBe(g.textBox.x + g.textBox.w + GAP)
+    expect(g.sections!.map((x) => x.badges.map((b) => b.code))).toEqual([[], ['I', 'II'], ['III']])
+    expect(g.sections![1].badges[1].rect.y).toBe(g.sections![1].badges[0].rect.y + BADGE + 2)
+    expect(g.sections![0].rule).toBeUndefined()
+  })
+  it('columns: stripping reminder text skips the section it leaves empty', () => {
+    const g = fit(card('benalia'), S, nodeEnv)
+    expect(g.strippedReminder).toBe(true)
+    expect(g.sections!.map((x) => x.badges.map((b) => b.code))).toEqual([['I', 'II'], ['III']])
+  })
+  it('columns: a rule sits above every header but the first section', () => {
+    const g = fit(card('ranger-class'), S, nodeEnv)
+    const [first, l2, l3] = g.sections!
+    expect(first.rule).toBeUndefined(); expect(first.header).toBeUndefined()
+    expect(l2.header).toMatchObject({ label: 'Level 2', costCodes: ['1', 'G'] }); expect(l2.rule).toBe(l2.header!.y - 3)
+    expect(l3.textTop).toBe(l3.header!.y + g.lineHeight)
+  })
+  it("columns: Urza's Saga shrinks the column before the text and never overflows", () => {
+    const g = fit(card('urzas-saga'), S, nodeEnv)
+    expect(g.overflow).toBe(false); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN)
+    expect(g.art === undefined || g.art.w < COL_ART_MAX).toBe(true)
+  })
+  it('columns: a leveler puts the card P/T in a stat box and the level P/T in headers', () => {
+    const g = fit(card('transcendent-master'), S, nodeEnv)
+    expect(g.statBox).toBeDefined(); expect(g.sections![1].header!.statLabel).toBe('6/6')
+  })
+  it('columns: a very long class drops the art column before clipping', () => {
+    const ranger = card('ranger-class') as Extract<Sheet, { kind: 'columns' }>
+    const sheet = { ...ranger, sections: ranger.sections.map((x) => ({ ...x, text: Array(60).fill('word').join(' ') })) }
+    const g = fit(sheet as Sheet, S, nodeEnv)
+    expect(g.art).toBeUndefined(); expect(g.textBox.w).toBe(384 - 16)
+  })
+  it('columns: absurd text clips the last sections at the floor and flags overflow', () => {
+    const ranger = card('ranger-class') as Extract<Sheet, { kind: 'columns' }>
+    const sheet = { ...ranger, sections: ranger.sections.map((x) => ({ ...x, text: Array(200).fill('word').join(' ') })) }
+    const g = fit(sheet as Sheet, S, nodeEnv)
+    expect(g.overflow).toBe(true); expect(g.textFontSize).toBe(TEXT_FLOOR); expect(g.art).toBeUndefined()
+    const last = g.sections![g.sections!.length - 1]
+    expect(last.lines.length).toBeGreaterThan(0)
+    expect(last.textTop + last.lines.length * g.lineHeight).toBeLessThanOrEqual(g.textBox.y + g.textBox.h - 6)
   })
 })

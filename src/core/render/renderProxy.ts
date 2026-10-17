@@ -23,7 +23,7 @@ export function renderProxy(sheet: Sheet, art: GreyImage | null, settings: Setti
   const geometry = fit(sheet, settings, env)
   const inner = artInnerBox(geometry)
   const artBits = art && inner ? prepareArt(art, inner, settings) : null
-  if (sheet.kind !== 'standard') throw new Error('not implemented')
+  if (sheet.kind !== 'standard' && sheet.kind !== 'columns') throw new Error('not implemented')
   const bits = paint(sheet, geometry, artBits, settings, env, stampsFor(env, settings.fontFamily))
   return { bits, geometry }
 }

@@ -7,6 +7,7 @@ import { wrapText, type Line } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { fitCandidates } from './candidates'
 import { fitNameBar, fitTypeFont, statWidth } from './bars'
+import { fitColumns } from './fitColumns'
 import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL, LINE_HEIGHT_RATIO } from './constants'
 
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -32,6 +33,7 @@ export const lineHeightFor = (fontSize: number) => Math.round(fontSize * LINE_HE
 export const symbolSizeFor = (fontSize: number) => Math.round(fontSize * 0.95)
 
 export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
+  if (sheet.kind === 'columns') return fitColumns(sheet, s, env)
   if (sheet.kind !== 'standard') throw new Error('not implemented')
   return fitStandard(sheet.face, s, env)
 }
