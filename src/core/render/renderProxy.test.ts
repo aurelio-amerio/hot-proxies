@@ -8,9 +8,13 @@ import { normalizeScryfall } from '../card/normalize'
 import { DEFAULT_SETTINGS } from '../settings'
 import { bitImageToImageData, toPacked } from '../output/packed'
 import type { BitImage } from '../art/types'
+import type { TokenIndex } from '../token/index'
+import { draftFromVariant } from '../token/draft'
 
 const GOLDEN = 'tests/golden', DIFF = 'tests/golden/__diff__'
 const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8')))
+const tokenIndex = JSON.parse(readFileSync('tests/fixtures/tokens/index.json', 'utf8')) as TokenIndex
+const tokenCard = (name: string, variant = 0) => draftFromVariant(tokenIndex.tokens.find((t) => t.name === name)!, variant).card
 
 function toCanvas(b: BitImage) {
   const c = nodeEnv.createCanvas(b.width, b.height)
@@ -54,6 +58,19 @@ describe('renderProxy', () => {
       await expectGolden(name, bits)
     })
   }
+  it('renders a noncreature token (no cost, no stat) identically to the golden image', async () => {
+    const { bits, geometry } = renderProxy(tokenCard('Treasure'), null, DEFAULT_SETTINGS, nodeEnv)
+    expect(geometry.costOnSecondLine).toBe(false)
+    expect(geometry.statBox).toBeUndefined()
+    expect(geometry.overflow).toBe(false)
+    await expectGolden('token-treasure', bits)
+  })
+  it('renders a creature token with P/T identically to the golden image', async () => {
+    const { bits, geometry } = renderProxy(tokenCard('Goblin', 0), null, DEFAULT_SETTINGS, nodeEnv)
+    expect(geometry.statBox).toBeDefined()
+    expect(geometry.overflow).toBe(false)
+    await expectGolden('token-goblin', bits)
+  })
   it('renders without art', () => {
     const { bits } = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv)
     expect(bits.bits.reduce((a, v) => a + v, 0)).toBeGreaterThan(1000)
