@@ -24,7 +24,7 @@ UPDATE_GOLDEN=1 npm test     # accept new golden renders after an intentional re
 npm run build:names -- oracle-cards-YYYYMMDDhhmmss.jsonl   # rebuild public/names.json from Scryfall bulk JSONL
 npm run build:tokens         # rebuild public/tokens.json from Scryfall search (token sets + emblems, every printing)
 npm run vendor:mana          # regenerate src/assets/mana/paths.ts from mana-master/svg
-npm run check:run          # write 3-card ESC/POS streams to tmp/run-check/ for a manual printer check
+npm run check:run          # write two 3-card ESC/POS streams and fold-pair.bin to tmp/run-check/ for a manual printer check
 ```
 
 There is no linter configured.

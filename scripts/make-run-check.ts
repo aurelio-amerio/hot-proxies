@@ -1,4 +1,4 @@
-// Writes two 3-card ESC/POS streams for a manual check on the real printer.
+// Writes two 3-card ESC/POS streams (one-init.bin, reset-per-card.bin) and a fold-pair stream (fold-pair.bin, Delver front + guide + rotated back) for a manual check on the real printer.
 // Usage: npm run check:run   then send each file over the printer's SPP COM port (see the printed instructions).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { nodeEnv } from '../tests/nodeEnv'
