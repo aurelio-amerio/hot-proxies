@@ -13,7 +13,7 @@ import type { TokenIndex } from '../token/index'
 import { draftFromVariant } from '../token/draft'
 
 const GOLDEN = 'tests/golden', DIFF = 'tests/golden/__diff__'
-const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8')))
+const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8'))).sheets[0]
 const tokenIndex = JSON.parse(readFileSync('tests/fixtures/tokens/index.json', 'utf8')) as TokenIndex
 const tokenCard = (name: string, variant = 0) => draftFromVariant(tokenIndex.tokens.find((t) => t.name === name)!, variant).card
 
@@ -52,7 +52,7 @@ describe('renderProxy', () => {
   for (const name of ['rotpriest', 'bolt', 'starting-town', 'bolas']) {
     it(`renders ${name} identically to the golden image`, async () => {
       const art = await loadArt(`tests/fixtures/art/${name}.jpg`)
-      const { bits, geometry } = renderProxy(standardSheet(card(name)), art, DEFAULT_SETTINGS, nodeEnv)
+      const { bits, geometry } = renderProxy(card(name), art, DEFAULT_SETTINGS, nodeEnv)
       expect(bits.width).toBe(384); expect(bits.height).toBe(536)
       expect(geometry.overflow).toBe(false)
       expect(toPacked(bits).length).toBe(48 * 536)
@@ -73,18 +73,18 @@ describe('renderProxy', () => {
     await expectGolden('token-goblin', bits)
   })
   it('renders without art', () => {
-    const { bits } = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv)
+    const { bits } = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv)
     expect(bits.bits.reduce((a, v) => a + v, 0)).toBeGreaterThan(1000)
   })
   it('is deterministic', () => {
-    const a = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
-    const b = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
+    const a = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
+    const b = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
     expect(Buffer.compare(Buffer.from(a), Buffer.from(b))).toBe(0)
   })
   it('changes the art region when the dither changes', () => {
     return loadArt('tests/fixtures/art/bolt.jpg').then((art) => {
-      const a = renderProxy(standardSheet(card('bolt')), art, DEFAULT_SETTINGS, nodeEnv).bits.bits
-      const b = renderProxy(standardSheet(card('bolt')), art, { ...DEFAULT_SETTINGS, dither: 'bayer4' }, nodeEnv).bits.bits
+      const a = renderProxy(card('bolt'), art, DEFAULT_SETTINGS, nodeEnv).bits.bits
+      const b = renderProxy(card('bolt'), art, { ...DEFAULT_SETTINGS, dither: 'bayer4' }, nodeEnv).bits.bits
       expect(Buffer.compare(Buffer.from(a), Buffer.from(b))).not.toBe(0)
     })
   })

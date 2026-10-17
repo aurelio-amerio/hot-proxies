@@ -10,7 +10,7 @@ import { fakeServices } from '../../tests/fakeServices'
 import { fakePrinter } from '../../tests/fakePrinter'
 
 const bolt = JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))
-const delver = JSON.parse(readFileSync('tests/fixtures/cards/delver.json', 'utf8'))
+const plane = JSON.parse(readFileSync('tests/fixtures/cards/plane.json', 'utf8'))
 
 function services(fetchCard: Services['client']['fetchCard'], printer = fakePrinter()): Services {
   return fakeServices({ fetchCard, printer, storage: { getItem: () => null, setItem: () => {} } })
@@ -38,10 +38,10 @@ describe('App', () => {
     await pick('Lightning Bolt')
     await waitFor(() => expect(screen.getByText(/Could not reach Scryfall/)).toBeInTheDocument())
   })
-  it('shows UnsupportedLayout for a transform card', async () => {
-    render(<App services={services(async () => delver)} />)
-    await pick('Delver of Secrets')
-    await waitFor(() => expect(screen.getByText(/'transform' layout/)).toBeInTheDocument())
+  it('shows UnsupportedLayout for a planar card', async () => {
+    render(<App services={services(async () => plane)} />)
+    await pick('Academy at Tolaria West')
+    await waitFor(() => expect(screen.getByText(/'planar' layout/)).toBeInTheDocument())
   })
 })
 

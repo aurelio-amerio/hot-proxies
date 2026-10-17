@@ -6,8 +6,11 @@ export class NetworkError extends Error {
 }
 export class UnsupportedLayout extends Error {
   constructor(public readonly cardName: string, public readonly layout: string) {
-    super(`${cardName} uses the '${layout}' layout, which is not supported yet.`); this.name = 'UnsupportedLayout'
+    super(`${cardName} uses the '${layout}' layout; oversized and Un-set cards are not supported.`); this.name = 'UnsupportedLayout'
   }
+}
+export class MeldUnavailable extends Error {
+  constructor() { super('Melded side could not be loaded.'); this.name = 'MeldUnavailable' }
 }
 export class ArtUnavailable extends Error {
   constructor() { super('Art could not be loaded; rendering without it.'); this.name = 'ArtUnavailable' }

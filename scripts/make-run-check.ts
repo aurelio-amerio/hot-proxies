@@ -1,6 +1,5 @@
 // Writes two 3-card ESC/POS streams for a manual check on the real printer.
 // Usage: npm run check:run   then send each file over the printer's SPP COM port (see the printed instructions).
-import { standardSheet } from '../src/core/card/types'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { nodeEnv } from '../tests/nodeEnv'
 import { loadArt } from '../tests/loadArt'
@@ -14,9 +13,9 @@ import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../src/core/printer'
 const fixtures: [string, string | null][] = [['bolt', 'bolt'], ['tarmogoyf', null], ['bolas', 'bolas']]
 const packs: { packed: Uint8Array; width: number; height: number }[] = []
 for (const [card, art] of fixtures) {
-  const c = normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${card}.json`, 'utf8')))
+  const c = normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${card}.json`, 'utf8'))).sheets[0]
   const g = art ? await loadArt(`tests/fixtures/art/${art}.jpg`) : null
-  const { bits } = renderProxy(standardSheet(c), g, DEFAULT_SETTINGS, nodeEnv)
+  const { bits } = renderProxy(c, g, DEFAULT_SETTINGS, nodeEnv)
   packs.push({ packed: toPacked(bits), width: bits.width, height: bits.height })
 }
 

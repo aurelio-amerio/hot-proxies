@@ -41,14 +41,14 @@ describe('useDeck verify', () => {
   })
   it('lists not-found names with a suggestion, unsupported layouts and bad counts, pinned to lines, and stays editing', async () => {
     const { result } = hook()
-    act(() => result.current.setText('4 Lightnin Bolt (STA) 42\n0 Forest\n1 Delver of Secrets\n1 Zzzzqqq'))
+    act(() => result.current.setText('4 Lightnin Bolt (STA) 42\n0 Forest\n1 Academy at Tolaria West\n1 Zzzzqqq'))
     await act(() => result.current.verify())
     expect(result.current.state).toBe('editing')
     expect(result.current.run).toBeNull()
     expect(result.current.issues).toEqual([
       { kind: 'not-found', line: 1, text: '4 Lightnin Bolt (STA) 42', name: 'Lightnin Bolt', suggestion: 'Lightning Bolt' },
       { kind: 'bad-count', line: 2, text: '0 Forest' },
-      { kind: 'unsupported-layout', line: 3, text: '1 Delver of Secrets', name: 'Delver of Secrets', layout: 'transform' },
+      { kind: 'unsupported-layout', line: 3, text: '1 Academy at Tolaria West', name: 'Academy at Tolaria West', layout: 'planar' },
       { kind: 'not-found', line: 4, text: '1 Zzzzqqq', name: 'Zzzzqqq', suggestion: null },
     ])
   })

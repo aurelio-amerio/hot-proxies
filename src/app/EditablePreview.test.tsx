@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { standardSheet } from '../core/card/types'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -11,8 +10,8 @@ import { DEFAULT_SETTINGS } from '../core/settings'
 import { nodeEnv } from '../../tests/nodeEnv'
 import type { BitImage } from '../core/art/types'
 
-const card = normalizeScryfall(JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8')))
-const geometry = fit(standardSheet(card), DEFAULT_SETTINGS, nodeEnv)
+const card = normalizeScryfall(JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))).sheets[0]
+const geometry = fit(card, DEFAULT_SETTINGS, nodeEnv)
 const bits: BitImage = { width: geometry.card.w, height: geometry.card.h, bits: new Uint8Array(geometry.card.w * geometry.card.h) }
 const ALL = ['name', 'art', 'type', 'rules', 'stat'] as const
 

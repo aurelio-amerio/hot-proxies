@@ -18,6 +18,8 @@ export const PRINTS_PAGE_CAP = 5
 
 export interface ScryfallClient {
   fetchCard(exactName: string): Promise<unknown>
+  /** A card by Scryfall id (used for a meld result). */
+  fetchCardById(id: string): Promise<unknown>
   fetchArtBlob(url: string): Promise<Blob>
   /** Every printing of an exact card name that has a front art crop, newest first. 404 means none. */
   fetchPrints(name: string): Promise<Printing[]>
@@ -119,6 +121,7 @@ export function createScryfallClient(o: ScryfallOptions): ScryfallClient {
       await o.cache.set(key, out)
       return out
     },
+    async fetchCardById() { throw new Error('not implemented') },
     async fetchArtById(ref) {
       const key = `art:${ref}`
       const hit = await o.cache.get<Blob>(key)

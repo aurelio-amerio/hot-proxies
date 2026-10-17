@@ -11,8 +11,17 @@ import { fakePrinter, type FakePrinter } from './fakePrinter'
 export const FIXTURE_CARDS: Record<string, string> = {
   'lightning bolt': 'bolt', 'tarmogoyf': 'tarmogoyf', 'forest': 'forest', 'nicol bolas, the ravager': 'bolas',
   'delver of secrets': 'delver', 'delver of secrets // insectile aberration': 'delver', 'smuggler\'s copter': 'copter',
+  'academy at tolaria west': 'plane',
 }
-export const FIXTURE_NAMES = ['Lightning Bolt', 'Tarmogoyf', 'Forest', 'Nicol Bolas, the Ravager', 'Delver of Secrets // Insectile Aberration', "Smuggler's Copter"]
+// Every layout fixture, by full name and by each face name, read from the JSON itself.
+const LAYOUT_FIXTURES = ['benalia', 'urzas-saga', 'ranger-class', 'case-skeleton', 'transcendent-master', 'fleshgorger', 'bonecrusher', 'fire-ice', 'dusk-dawn', 'bushi', 'valki', 'gobakhan', 'hanweir-battlements', 'hanweir-township', 'kami-war']
+const readCard = (f: string) => JSON.parse(readFileSync(`tests/fixtures/cards/${f}.json`, 'utf8')) as { id: string; name: string; card_faces?: { name: string }[] }
+for (const f of LAYOUT_FIXTURES) {
+  const c = readCard(f)
+  FIXTURE_CARDS[c.name.toLowerCase()] = f
+  for (const face of c.card_faces ?? []) FIXTURE_CARDS[face.name.toLowerCase()] = f
+}
+export const FIXTURE_NAMES = ['Lightning Bolt', 'Tarmogoyf', 'Forest', 'Nicol Bolas, the Ravager', 'Delver of Secrets // Insectile Aberration', "Smuggler's Copter", ...LAYOUT_FIXTURES.map((f) => readCard(f).name)]
 export const FIXTURE_TOKENS = JSON.parse(readFileSync('tests/fixtures/tokens/index.json', 'utf8')) as TokenIndex
 export const FAKE_GREY: GreyImage = { width: 1, height: 1, data: new Float32Array([0]) }
 
@@ -24,6 +33,7 @@ export function memoryStorage(): Store & { map: Map<string, string> } {
 export interface FakeServicesOptions {
   printer?: FakePrinter
   fetchCard?: Services['client']['fetchCard']
+  fetchCardById?: Services['client']['fetchCardById']
   fetchPrints?: Services['client']['fetchPrints']
   fetchArtById?: Services['client']['fetchArtById']
   loadNames?: Services['loadNames']
@@ -41,6 +51,10 @@ export function fakeServices(o: FakeServicesOptions = {}): Services & { printer:
   return {
     client: {
       fetchCard,
+      fetchCardById: o.fetchCardById ?? (async (id: string) => {
+        for (const f of new Set(Object.values(FIXTURE_CARDS))) { const c = readCard(f); if (c.id === id) return c }
+        throw new CardNotFound(id)
+      }),
       fetchArtBlob: async () => { throw new Error('no art in tests') },
       fetchPrints: o.fetchPrints ?? (async () => []),
       fetchArtById: o.fetchArtById ?? (async () => { throw new ArtUnavailable() }),

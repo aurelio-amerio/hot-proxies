@@ -1,4 +1,4 @@
-import { standardSheet } from '../core/card/types'
+import { sheetFaces, standardSheet } from '../core/card/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
@@ -117,7 +117,7 @@ export function useDeck(services: Services, settings: Settings) {
       for (let i = 0; i < distinct.length; i++) {
         const d = distinct[i]
         try {
-          const card = normalizeScryfall(await services.client.fetchCard(d.name))
+          const card = sheetFaces(normalizeScryfall(await services.client.fetchCard(d.name)).sheets[0])[0]
           const { art } = await resolveArt(services, card)
           cards.push({ key: d.key, name: card.name, count: d.count, line: d.line, card, art })
         } catch (e) {

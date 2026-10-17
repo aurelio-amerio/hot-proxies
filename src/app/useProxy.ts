@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
-import { standardSheet, type CardData } from '../core/card/types'
+import { sheetFaces, standardSheet, type CardData } from '../core/card/types'
 import type { GreyImage, BitImage } from '../core/art/types'
 import type { Geometry } from '../core/layout/fit'
 import type { Printing } from '../data/scryfall'
@@ -37,7 +37,7 @@ export function useProxy(services: Services, settings: Settings) {
     ++artSeq.current
     setState('loading'); setErrors([]); setPrints(null); setPrintsError(null)
     try {
-      const c = normalizeScryfall(await services.client.fetchCard(name))
+      const c = sheetFaces(normalizeScryfall(await services.client.fetchCard(name)).sheets[0])[0]
       const r = await resolveArt(services, c)
       if (my !== seq.current) return
       setCard(c); setArt(r.art); setArtFailed(r.failed); setArtRef(getPreferredArt(services.storage, c.name)); setState('rendered')

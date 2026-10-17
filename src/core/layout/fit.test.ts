@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from '../settings'
 import { standardSheet, type CardData } from '../card/types'
 import { ART_MAX, ART_MID, ART_MIN, TEXT_MIN, TEXT_FLOOR } from './constants'
 
-const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8')))
+const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8'))).sheets[0]
 const synthetic = (words: number, extra: Partial<CardData> = {}): CardData => ({
   name: 'Test Card', manaCost: '{1}{G}', typeLine: 'Creature — Test', oracleText: Array(words).fill('word').join(' '),
   stat: { kind: 'pt', power: '1', toughness: '1' }, ...extra,
@@ -16,17 +16,17 @@ const S = DEFAULT_SETTINGS
 
 describe('fit', () => {
   it('tags a standard sheet', () => {
-    expect(fit(standardSheet(card('bolt')), S, nodeEnv).kind).toBe('standard')
+    expect(fit(card('bolt'), S, nodeEnv).kind).toBe('standard')
   })
   it('fills the card grid and stacks bars without overlap', () => {
-    const g = fit(standardSheet(card('rotpriest')), S, nodeEnv)
+    const g = fit(card('rotpriest'), S, nodeEnv)
     expect(g.card).toEqual({ w: 384, h: 536 })
     expect(g.nameBar.y).toBeLessThan(g.art!.y); expect(g.art!.y + g.art!.h).toBeLessThanOrEqual(g.typeBar.y)
     expect(g.typeBar.y + g.typeBar.h).toBeLessThanOrEqual(g.textBox.y)
     expect(g.textBox.y + g.textBox.h).toBeLessThanOrEqual(536 - 8)
   })
   it('gives a short card full-size art at base text size', () => {
-    const g = fit(standardSheet(card('bolt')), S, nodeEnv)
+    const g = fit(card('bolt'), S, nodeEnv)
     expect(g.art!.h).toBe(ART_MAX); expect(g.textFontSize).toBe(S.textSize); expect(g.overflow).toBe(false)
   })
   it('shrinks art before text for a medium card', () => {
@@ -34,7 +34,7 @@ describe('fit', () => {
     expect(g.textFontSize).toBe(S.textSize); expect(g.art!.h).toBeLessThan(ART_MAX); expect(g.art!.h).toBeGreaterThanOrEqual(ART_MID)
   })
   it('fits Bolas without overflow and with a loyalty box', () => {
-    const g = fit(standardSheet(card('bolas')), S, nodeEnv)
+    const g = fit(card('bolas'), S, nodeEnv)
     expect(g.overflow).toBe(false)
     expect(g.statBox).toBeDefined()
   })
@@ -71,14 +71,14 @@ describe('fit', () => {
     const ctx = nodeEnv.createCanvas(8, 8).getContext('2d')
     ctx.font = `bold ${g.typeFontSize}px ${S.fontFamily}`
     expect(ctx.measureText(typeLine).width).toBeLessThanOrEqual(g.typeBar.w - 16)
-    expect(fit(standardSheet(card('bolt')), S, nodeEnv).typeFontSize).toBe(18)
+    expect(fit(card('bolt'), S, nodeEnv).typeFontSize).toBe(18)
   })
   it('uses the whole name bar when there is no mana cost', () => {
-    const g = fit(standardSheet(card('starting-town')), S, nodeEnv)
+    const g = fit(card('starting-town'), S, nodeEnv)
     expect(g.nameFontSize).toBe(S.nameSize); expect(g.costOnSecondLine).toBe(false); expect(g.statBox).toBeUndefined()
   })
   it('shrinks a long name to clear the cost', () => {
-    const g = fit(standardSheet(card('bolas')), S, nodeEnv)
+    const g = fit(card('bolas'), S, nodeEnv)
     expect(g.nameFontSize).toBeLessThan(S.nameSize); expect(g.costOnSecondLine).toBe(false)
   })
   it('moves a huge cost to a second line', () => {
@@ -86,7 +86,7 @@ describe('fit', () => {
     expect(g.costOnSecondLine).toBe(true); expect(g.nameBar.h).toBeGreaterThan(34)
   })
   it('respects a custom dots-per-line', () => {
-    const g = fit(standardSheet(card('bolt')), { ...S, dotsPerLine: 576 }, nodeEnv)
+    const g = fit(card('bolt'), { ...S, dotsPerLine: 576 }, nodeEnv)
     expect(g.card).toEqual({ w: 576, h: 805 })
   })
 })
