@@ -27,8 +27,15 @@ describe('half-name matching', () => {
   it('finds a multi-face card by its second half', () => {
     expect(m.search('stomp')).toEqual(['Bonecrusher Giant // Stomp'])
   })
-  it('returns a card once when both its full name and a half match', () => {
-    expect(m.search('ice')).toEqual(['Fire // Ice'])
-    expect(m.search('fire //')).toEqual(['Fire // Ice'])
+  it('ranks a half-name prefix above a shorter word-prefix match', () => {
+    expect(createMatcher(['A Ice', 'Fire // Ice']).search('ice')).toEqual(['Fire // Ice', 'A Ice'])
+  })
+  it('tolerates a typo in a half name (stomx)', () => {
+    expect(m.search('stomx')).toEqual(['Bonecrusher Giant // Stomp'])
+  })
+  it('returns a card once when several of its aliases match', () => {
+    const r = createMatcher(['Fire // Fire Ice', 'Fire // Ice']).search('fire')
+    expect(r).toEqual(['Fire // Ice', 'Fire // Fire Ice'])
+    expect(createMatcher(['Ice // Ice']).search('ice')).toEqual(['Ice // Ice'])
   })
 })
