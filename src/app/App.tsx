@@ -20,7 +20,8 @@ import { useProxy } from './useProxy'
 import { usePrinter } from './usePrinter'
 import { PrinterChip } from './PrinterChip'
 import { SearchBox } from './SearchBox'
-import { Preview } from './Preview'
+import { EditablePreview } from './EditablePreview'
+import { ArtPickerDialog } from './ArtPickerDialog'
 import { SettingsDrawer } from './SettingsDrawer'
 import { useMode } from './useMode'
 import { useDeck } from './useDeck'
@@ -34,8 +35,10 @@ export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fanc
 
 export function App({ services }: { services: Services }) {
   const [settings, update, reset] = useSettings(services.storage)
-  const { state, card, bits, geometry, errors, render } = useProxy(services, settings)
+  const proxy = useProxy(services, settings)
+  const { state, card, bits, geometry, errors, render } = proxy
   const [drawer, setDrawer] = useState(false)
+  const [artOpen, setArtOpen] = useState(false)
   const printer = usePrinter(services)
   const [mode, setMode] = useMode(services.storage)
   const deck = useDeck(services, settings)
@@ -65,10 +68,16 @@ export function App({ services }: { services: Services }) {
             {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}
             {geometry?.overflow && <Alert severity="warning">Rules text was clipped to fit.</Alert>}
             {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
-            {state === 'rendered' && card && bits && (
-              <Preview bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
+            {state === 'rendered' && card && bits && geometry && (
+              <EditablePreview bits={bits} geometry={geometry} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
+                enabled={['art']} disabled={printer.state === 'printing'}
+                onEdit={() => { setArtOpen(true); void proxy.loadPrints() }}
                 print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
             )}
+            <ArtPickerDialog open={artOpen && mode === 'card'} current={proxy.artRef} noneLabel="Default art"
+              options={proxy.prints?.map((p) => ({ ref: p.ref, thumbUrl: p.artUrl, label: `${p.set.toUpperCase()} ${p.released}` })) ?? null}
+              error={proxy.printsError}
+              onPick={(ref) => { void proxy.chooseArt(ref) }} onClose={() => setArtOpen(false)} />
             </>)}
             {mode === 'deck' && <DeckPanel deck={deck} printerState={printer.state} settings={settings} />}
             {mode === 'tokens' && <TokensPanel tokens={tokens} printerState={printer.state} settings={settings} />}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { readFileSync } from 'node:fs'
 import { App } from './App'
@@ -179,5 +179,36 @@ describe('App modes', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: 'Print' }))
     expect(await screen.findByText(/disconnected during printing/)).toBeInTheDocument()
+  })
+})
+
+describe('App card art picker', () => {
+  it('opens the printings from the art hotspot, stores the pick and reloads the art', async () => {
+    const store = new Map<string, string>()
+    const prints = [
+      { ref: 'aaaaaaaa000040008000000000000001', artUrl: 'https://c/1.jpg', set: 'lea', released: '1993-08-05' },
+      { ref: 'aaaaaaaa000040008000000000000002', artUrl: 'https://c/2.jpg', set: 'm10', released: '2009-07-17' },
+    ]
+    const fetchArtById = vi.fn(async () => { throw new Error('no art in tests') })
+    const s = fakeServices({ fetchCard: async () => bolt, fetchPrints: async () => prints, fetchArtById, storage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => { store.set(k, v) } } })
+    render(<App services={s} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByTestId('preview')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Edit name' })).toBeNull()      // Card mode: art only
+    await userEvent.click(screen.getByRole('button', { name: 'Change art' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Choose art' })
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'M10 2009-07-17' })).toBeInTheDocument())
+    expect(within(dialog).getByRole('button', { name: 'Default art' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'M10 2009-07-17' }))
+    await waitFor(() => expect(JSON.parse(store.get('hot-proxies.art.v1')!)).toEqual({ 'Lightning Bolt': 'aaaaaaaa000040008000000000000002' }))
+    expect(fetchArtById).toHaveBeenCalledWith('aaaaaaaa000040008000000000000002')
+  })
+  it('shows the printings error inside the dialog', async () => {
+    const s = fakeServices({ fetchCard: async () => bolt, fetchPrints: async () => { throw new Error('boom') }, storage: { getItem: () => null, setItem: () => {} } })
+    render(<App services={s} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Change art' })).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: 'Change art' }))
+    await waitFor(() => expect(screen.getByText('Could not load other printings.')).toBeInTheDocument())
   })
 })
