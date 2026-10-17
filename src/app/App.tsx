@@ -26,6 +26,8 @@ import { useMode } from './useMode'
 import { useDeck } from './useDeck'
 import { DeckPanel } from './DeckPanel'
 import { ModeSwitch } from './ModeSwitch'
+import { useTokens } from './useTokens'
+import { TokensPanel } from './TokensPanel'
 
 export const REPO_URL = 'https://github.com/aurelio-amerio/hot-proxies'
 export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fancontentpolicy'
@@ -37,9 +39,10 @@ export function App({ services }: { services: Services }) {
   const printer = usePrinter(services)
   const [mode, setMode] = useMode(services.storage)
   const deck = useDeck(services, settings)
+  const tokens = useTokens(services, settings)
   // Verify errors show inline in the deck panel; the snackbar carries print failures from either mode.
-  const snack = printer.error ?? (deck.state === 'paused' ? deck.error : null)
-  const clearSnack = () => { printer.clearError(); deck.clearError() }
+  const snack = printer.error ?? (deck.state === 'paused' ? deck.error : null) ?? tokens.printError
+  const clearSnack = () => { printer.clearError(); deck.clearError(); tokens.clearPrintError() }
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -68,6 +71,7 @@ export function App({ services }: { services: Services }) {
             )}
             </>)}
             {mode === 'deck' && <DeckPanel deck={deck} printerState={printer.state} settings={settings} />}
+            {mode === 'tokens' && <TokensPanel tokens={tokens} printerState={printer.state} settings={settings} />}
           </Stack>
         </Paper>
         <Stack spacing={1} sx={{ mt: 2, px: 1 }}>

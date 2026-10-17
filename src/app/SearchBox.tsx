@@ -3,9 +3,9 @@ import Autocomplete from '@mui/material/Autocomplete'
 import TextField from '@mui/material/TextField'
 import { createMatcher, type Matcher } from '../data/fuzzy'
 
-export interface SearchBoxProps { loadNames(): Promise<string[]>; onPick(exactName: string): void; disabled?: boolean }
+export interface SearchBoxProps { loadNames(): Promise<string[]>; onPick(exactName: string): void; disabled?: boolean; label?: string; placeholder?: string }
 
-export function SearchBox({ loadNames, onPick, disabled }: SearchBoxProps) {
+export function SearchBox({ loadNames, onPick, disabled, label = 'Card name', placeholder = 'Lightning Bolt' }: SearchBoxProps) {
   const [matcher, setMatcher] = useState<Matcher | null>(null)
   const [input, setInput] = useState('')
   const [debounced, setDebounced] = useState('')
@@ -17,7 +17,7 @@ export function SearchBox({ loadNames, onPick, disabled }: SearchBoxProps) {
       freeSolo disabled={disabled} options={options} inputValue={input} filterOptions={(x) => x}
       onInputChange={(_e, v) => setInput(v)}
       onChange={(_e, v) => { if (typeof v === 'string' && v.trim()) onPick(v.trim()) }}
-      renderInput={(params) => <TextField {...params} label="Card name" placeholder="Lightning Bolt" autoFocus />}
+      renderInput={(params) => <TextField {...params} label={label} placeholder={placeholder} autoFocus />}
     />
   )
 }

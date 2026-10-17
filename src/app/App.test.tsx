@@ -150,4 +150,34 @@ describe('App modes', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Print 1 cards' }))
     await waitFor(() => expect(screen.getByText('Printer disconnected during printing. Reconnect and print again.')).toBeInTheDocument())
   })
+  it('switches to Tokens, persists it, and prints copies through the shared printer', async () => {
+    const store = new Map<string, string>()
+    const printer = fakePrinter('connected'); printer.name = 'PT210_FAKE'
+    const s = services(async () => bolt, printer)
+    s.storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => { store.set(k, v) } }
+    render(<App services={s} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Tokens' }))
+    expect(store.get('hot-proxies.mode.v1')).toBe('"tokens"')
+    await userEvent.type(screen.getByRole('combobox', { name: 'Token name' }), 'Treasure{enter}')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'More copies' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Print' }))
+    await waitFor(() => expect(printer.writes.reduce((a, w) => a + w.length, 0)).toBe(5 + 2 * (9 * 8 + 48 * 536 + 3)))
+  })
+  it('opens in Tokens mode when that was stored', () => {
+    const s = services(async () => bolt)
+    s.storage = { getItem: (k) => (k === 'hot-proxies.mode.v1' ? '"tokens"' : null), setItem: () => {} }
+    render(<App services={s} />)
+    expect(screen.getByRole('combobox', { name: 'Token name' })).toBeInTheDocument()
+  })
+  it('shows a token print drop in the shared snackbar', async () => {
+    const printer = fakePrinter('connected'); printer.name = 'PT210_FAKE'; printer.failWrites = new Error('gatt')
+    const s = services(async () => bolt, printer)
+    s.storage = { getItem: (k) => (k === 'hot-proxies.mode.v1' ? '"tokens"' : null), setItem: () => {} }
+    render(<App services={s} />)
+    await userEvent.type(screen.getByRole('combobox', { name: 'Token name' }), 'Treasure{enter}')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'Print' }))
+    expect(await screen.findByText(/disconnected during printing/)).toBeInTheDocument()
+  })
 })
