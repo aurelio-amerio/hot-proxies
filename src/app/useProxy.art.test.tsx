@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { standardSheet } from '../core/card/types'
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useProxy } from './useProxy'
@@ -53,7 +54,7 @@ describe('useProxy art preference', () => {
     await act(() => result.current.render('Lightning Bolt'))
     await waitFor(() => expect(result.current.bits).not.toBeNull())
     const card = result.current.card!
-    const withA = renderProxy(card, greyA, DEFAULT_SETTINGS, s.env).bits, withB = renderProxy(card, greyB, DEFAULT_SETTINGS, s.env).bits
+    const withA = renderProxy(standardSheet(card), greyA, DEFAULT_SETTINGS, s.env).bits, withB = renderProxy(standardSheet(card), greyB, DEFAULT_SETTINGS, s.env).bits
     const same = (x: BitImage | null, y: BitImage) => !!x && x.bits.every((v, i) => v === y.bits[i])
     expect(same(withA, withB)).toBe(false)
     let first!: Promise<void>

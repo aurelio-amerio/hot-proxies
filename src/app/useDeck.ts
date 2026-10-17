@@ -1,3 +1,4 @@
+import { standardSheet } from '../core/card/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
@@ -68,7 +69,7 @@ export function useDeck(services: Services, settings: Settings) {
       for (let i = 0; i < cards.length; i++) {
         if (!on) return
         const c = cards[i]
-        const r = renderProxy(c.card, c.art, settings, services.env)
+        const r = renderProxy(standardSheet(c.card), c.art, settings, services.env)
         next.set(c.key, { bits: r.bits, overflow: r.geometry.overflow, artMissing: !!c.card.artUrl && !c.art })
         if (i % 4 === 3) await new Promise<void>((res) => setTimeout(res, 0))   // keep the UI responsive
       }

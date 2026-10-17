@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
-import type { CardData } from '../core/card/types'
+import { standardSheet, type CardData } from '../core/card/types'
 import type { GreyImage, BitImage } from '../core/art/types'
 import type { Geometry } from '../core/layout/fit'
 import type { Printing } from '../data/scryfall'
@@ -73,7 +73,7 @@ export function useProxy(services: Services, settings: Settings) {
     const draw = (fontError: Error | null) => {
       if (!on) return
       setFontError(fontError)
-      const r = renderProxy(card, art, settings, services.env)
+      const r = renderProxy(standardSheet(card), art, settings, services.env)
       setBits(r.bits); setGeometry(r.geometry)
     }
     // A missing font (e.g. MPlantin without the local file) must not stall rendering: fall back and warn.

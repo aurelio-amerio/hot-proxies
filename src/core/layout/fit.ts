@@ -1,4 +1,4 @@
-import type { CardData } from '../card/types'
+import type { Face, Sheet } from '../card/types'
 import type { Settings } from '../settings'
 import type { RenderEnv } from '../env'
 import { cardHeight } from '../printer'
@@ -6,57 +6,52 @@ import { tokenize } from '../text/tokenize'
 import { wrapText, type Line } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { fitCandidates } from './candidates'
-import { MARGIN, GAP, NAME_H, TYPE_H, TEXT_PAD, STAT_H, STAT_PAD, COST_SYMBOL, NAME_MIN, TYPE_SIZE, TYPE_MIN, LINE_HEIGHT_RATIO } from './constants'
+import { fitNameBar, fitTypeFont, statWidth } from './bars'
+import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL, LINE_HEIGHT_RATIO } from './constants'
 
 export interface Rect { x: number; y: number; w: number; h: number }
+export interface SectionGeometry { rule?: number; header?: { label: string; y: number; costCodes: string[]; statLabel?: string }; badges: { code: string; rect: Rect }[]; textX: number; textTop: number; lines: Line[] }
+export interface SubGeometry { box: Rect; nameY: number; typeY?: number; typeFontSize: number; textTop: number; lines: Line[]; statBox?: Rect; headerStat?: string }
+export interface HalfGeometry { nameBar: Rect; nameFontSize: number; costOnSecondLine: boolean; typeBar: Rect; typeFontSize: number; textBox: Rect; lines: Line[] }
+
 export interface Geometry {
+  kind: 'standard' | 'columns' | 'stacked' | 'split'
   card: { w: number; h: number }
   nameBar: Rect; nameFontSize: number; costOnSecondLine: boolean; costSymbolSize: number
-  art: Rect; typeBar: Rect; typeFontSize: number
+  art?: Rect                                         // absent when the art was dropped
+  typeBar: Rect; typeFontSize: number
   textBox: Rect; textFontSize: number; lineHeight: number; symbolSize: number; textLines: Line[]
   statBox?: Rect
+  sections?: SectionGeometry[]                       // columns
+  sub?: SubGeometry                                  // stacked
+  second?: HalfGeometry                              // split
   overflow: boolean; strippedReminder: boolean
 }
 
-const symbolCount = (cost: string) => (cost.match(/\{[^}]+\}/g) ?? []).length
 export const lineHeightFor = (fontSize: number) => Math.round(fontSize * LINE_HEIGHT_RATIO)
 export const symbolSizeFor = (fontSize: number) => Math.round(fontSize * 0.95)
 
-export function fit(card: CardData, s: Settings, env: RenderEnv): Geometry {
+export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
+  if (sheet.kind !== 'standard') throw new Error('not implemented')
+  return fitStandard(sheet.face, s, env)
+}
+
+function fitStandard(card: Face, s: Settings, env: RenderEnv): Geometry {
   const W = s.dotsPerLine, H = cardHeight(W)
   const ctx = env.createCanvas(8, 8).getContext('2d')
   const family = s.fontFamily
   const innerW = W - 2 * MARGIN
 
-  // --- name bar ---
-  const costW = symbolCount(card.manaCost) * (COST_SYMBOL + 3)
-  const barInner = innerW - 16
-  let costOnSecondLine = costW > barInner / 2
-  let nameFontSize = s.nameSize
-  const nameRoom = costOnSecondLine ? barInner : barInner - costW - 6
-  for (; nameFontSize > NAME_MIN; nameFontSize--) {
-    ctx.font = `bold ${nameFontSize}px ${family}`
-    if (ctx.measureText(card.name).width <= nameRoom) break
-  }
-  const nameBar: Rect = { x: MARGIN, y: MARGIN, w: innerW, h: costOnSecondLine ? NAME_H + COST_SYMBOL + 4 : NAME_H }
+  const { nameBar, nameFontSize, costOnSecondLine } = fitNameBar(ctx, card, s.nameSize, family, MARGIN, MARGIN, innerW)
 
   // --- stat box width ---
   let statBox: Rect | undefined
-  let statW = 0
-  if (card.stat) {
-    ctx.font = `bold 24px ${family}`
-    const label = card.stat.kind === 'pt' ? `${card.stat.power}/${card.stat.toughness}` : card.stat.value
-    statW = Math.ceil(ctx.measureText(label).width) + 2 * STAT_PAD
-  }
+  const statW = card.stat ? statWidth(ctx, card.stat, family) : 0
 
   // --- art + text share the rest ---
   const typeBarH = TYPE_H
   // --- type line: shrink until it fits inside the bar's 8-dot side padding ---
-  let typeFontSize = TYPE_SIZE
-  for (; typeFontSize > TYPE_MIN; typeFontSize--) {
-    ctx.font = `bold ${typeFontSize}px ${family}`
-    if (ctx.measureText(card.typeLine).width <= innerW - 16) break
-  }
+  const typeFontSize = fitTypeFont(ctx, card.typeLine, family, innerW)
   const fixedTop = nameBar.y + nameBar.h + GAP
   const available = H - MARGIN - fixedTop - GAP - typeBarH - GAP   // art + text box
   const textInnerW = innerW - 2 * TEXT_PAD
@@ -85,6 +80,7 @@ export function fit(card: CardData, s: Settings, env: RenderEnv): Geometry {
   if (card.stat) statBox = { x: textBox.x + textBox.w - statW, y: textBox.y + textBox.h - STAT_H, w: statW, h: STAT_H }
 
   return {
+    kind: 'standard',
     card: { w: W, h: H },
     nameBar, nameFontSize, costOnSecondLine, costSymbolSize: COST_SYMBOL,
     art, typeBar, typeFontSize,

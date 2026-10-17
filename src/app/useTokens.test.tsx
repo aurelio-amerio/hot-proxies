@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { standardSheet } from '../core/card/types'
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useTokens, TOKEN_DRAFT_KEY } from './useTokens'
@@ -94,7 +95,7 @@ describe('useTokens art', () => {
       : new Promise<Blob>((res) => { releaseB = res }))
     const s = fakeServices({ fetchArtById, decodeArt: async () => FAKE_GREY })
     const { result } = hook(s)
-    const bitsOf = (d: TokenDraft, withArt: boolean) => renderProxy(d.card, withArt ? FAKE_GREY : null, DEFAULT_SETTINGS, s.env).bits
+    const bitsOf = (d: TokenDraft, withArt: boolean) => renderProxy(standardSheet(d.card), withArt ? FAKE_GREY : null, DEFAULT_SETTINGS, s.env).bits
     const same = (x: BitImage | null, y: BitImage) => !!x && x.width === y.width && x.height === y.height && x.bits.every((v, i) => v === y.bits[i])
     await waitFor(() => expect(result.current.index).not.toBeNull())
     act(() => result.current.pickToken('Treasure'))

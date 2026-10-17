@@ -16,7 +16,7 @@ export function hotspotsFor(g: Geometry): Hotspot[] {
   }
   return [
     { kind: 'name', rect: g.nameBar, label: HOTSPOT_LABELS.name },
-    { kind: 'art', rect: g.art, label: HOTSPOT_LABELS.art },
+    ...(g.art ? [{ kind: 'art' as const, rect: g.art, label: HOTSPOT_LABELS.art }] : []),
     { kind: 'type', rect: g.typeBar, label: HOTSPOT_LABELS.type },
     { kind: 'rules', rect: g.textBox, label: HOTSPOT_LABELS.rules },
     { kind: 'stat', rect: stat, label: HOTSPOT_LABELS.stat },

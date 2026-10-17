@@ -1,11 +1,11 @@
-import type { CardData } from '../card/types'
+import type { Sheet } from '../card/types'
 import type { Settings } from '../settings'
 import type { RenderEnv } from '../env'
 import type { GreyImage, BitImage } from '../art/types'
 import { fit, type Geometry } from '../layout/fit'
 import { prepareArt } from '../art/prepare'
 import { StampCache } from '../symbols/stamp'
-import { paint, artInnerBox } from './paint'
+import { paint } from './paint'
 
 const stampCaches = new WeakMap<RenderEnv, Map<string, StampCache>>()
 function stampsFor(env: RenderEnv, family: string): StampCache {
@@ -16,10 +16,14 @@ function stampsFor(env: RenderEnv, family: string): StampCache {
   return c
 }
 
+export const artInnerBox = (g: Geometry) => g.art ? { w: g.art.w - 4, h: g.art.h - 4 } : null
+
 /** The one entry point the UI (and a future batch renderer) calls. Pure: same inputs, same bits. */
-export function renderProxy(card: CardData, art: GreyImage | null, settings: Settings, env: RenderEnv): { bits: BitImage; geometry: Geometry } {
-  const geometry = fit(card, settings, env)
-  const artBits = art ? prepareArt(art, artInnerBox(geometry), settings) : null
-  const bits = paint(card, geometry, artBits, settings, env, stampsFor(env, settings.fontFamily))
+export function renderProxy(sheet: Sheet, art: GreyImage | null, settings: Settings, env: RenderEnv): { bits: BitImage; geometry: Geometry } {
+  const geometry = fit(sheet, settings, env)
+  const inner = artInnerBox(geometry)
+  const artBits = art && inner ? prepareArt(art, inner, settings) : null
+  if (sheet.kind !== 'standard') throw new Error('not implemented')
+  const bits = paint(sheet, geometry, artBits, settings, env, stampsFor(env, settings.fontFamily))
   return { bits, geometry }
 }

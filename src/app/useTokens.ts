@@ -1,3 +1,4 @@
+import { standardSheet } from '../core/card/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
@@ -95,7 +96,7 @@ export function useTokens(services: Services, settings: Settings) {
     const draw = (err: string | null) => {
       if (!on) return
       setFontError(err)
-      const r = renderProxy(card, art, settings, services.env)
+      const r = renderProxy(standardSheet(card), art, settings, services.env)
       setBits(r.bits); setGeometry(r.geometry)
     }
     ensureFonts(settings.fontFamily).then(

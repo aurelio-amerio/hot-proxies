@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { ImageData, loadImage } from '@napi-rs/canvas'
 import { nodeEnv, canvasToPng } from '../../../tests/nodeEnv'
 import { loadArt } from '../../../tests/loadArt'
+import { standardSheet } from '../card/types'
 import { renderProxy } from './renderProxy'
 import { normalizeScryfall } from '../card/normalize'
 import { DEFAULT_SETTINGS } from '../settings'
@@ -51,7 +52,7 @@ describe('renderProxy', () => {
   for (const name of ['rotpriest', 'bolt', 'starting-town', 'bolas']) {
     it(`renders ${name} identically to the golden image`, async () => {
       const art = await loadArt(`tests/fixtures/art/${name}.jpg`)
-      const { bits, geometry } = renderProxy(card(name), art, DEFAULT_SETTINGS, nodeEnv)
+      const { bits, geometry } = renderProxy(standardSheet(card(name)), art, DEFAULT_SETTINGS, nodeEnv)
       expect(bits.width).toBe(384); expect(bits.height).toBe(536)
       expect(geometry.overflow).toBe(false)
       expect(toPacked(bits).length).toBe(48 * 536)
@@ -59,31 +60,31 @@ describe('renderProxy', () => {
     })
   }
   it('renders a noncreature token (no cost, no stat) identically to the golden image', async () => {
-    const { bits, geometry } = renderProxy(tokenCard('Treasure'), null, DEFAULT_SETTINGS, nodeEnv)
+    const { bits, geometry } = renderProxy(standardSheet(tokenCard('Treasure')), null, DEFAULT_SETTINGS, nodeEnv)
     expect(geometry.costOnSecondLine).toBe(false)
     expect(geometry.statBox).toBeUndefined()
     expect(geometry.overflow).toBe(false)
     await expectGolden('token-treasure', bits)
   })
   it('renders a creature token with P/T identically to the golden image', async () => {
-    const { bits, geometry } = renderProxy(tokenCard('Goblin', 0), null, DEFAULT_SETTINGS, nodeEnv)
+    const { bits, geometry } = renderProxy(standardSheet(tokenCard('Goblin', 0)), null, DEFAULT_SETTINGS, nodeEnv)
     expect(geometry.statBox).toBeDefined()
     expect(geometry.overflow).toBe(false)
     await expectGolden('token-goblin', bits)
   })
   it('renders without art', () => {
-    const { bits } = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv)
+    const { bits } = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv)
     expect(bits.bits.reduce((a, v) => a + v, 0)).toBeGreaterThan(1000)
   })
   it('is deterministic', () => {
-    const a = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
-    const b = renderProxy(card('bolt'), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
+    const a = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
+    const b = renderProxy(standardSheet(card('bolt')), null, DEFAULT_SETTINGS, nodeEnv).bits.bits
     expect(Buffer.compare(Buffer.from(a), Buffer.from(b))).toBe(0)
   })
   it('changes the art region when the dither changes', () => {
     return loadArt('tests/fixtures/art/bolt.jpg').then((art) => {
-      const a = renderProxy(card('bolt'), art, DEFAULT_SETTINGS, nodeEnv).bits.bits
-      const b = renderProxy(card('bolt'), art, { ...DEFAULT_SETTINGS, dither: 'bayer4' }, nodeEnv).bits.bits
+      const a = renderProxy(standardSheet(card('bolt')), art, DEFAULT_SETTINGS, nodeEnv).bits.bits
+      const b = renderProxy(standardSheet(card('bolt')), art, { ...DEFAULT_SETTINGS, dither: 'bayer4' }, nodeEnv).bits.bits
       expect(Buffer.compare(Buffer.from(a), Buffer.from(b))).not.toBe(0)
     })
   })
