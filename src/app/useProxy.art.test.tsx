@@ -81,6 +81,30 @@ describe('useProxy art preference', () => {
     expect(result.current.artRef).toBe('refB')
     await waitFor(() => expect(same(result.current.renders[0]?.bits ?? null, withB)).toBe(true))
   })
+  it('a chooseArt for the previous card that resolves after a new render cannot land its art', async () => {
+    const storage = memoryStorage()
+    const greyA: GreyImage = { width: 1, height: 1, data: new Float32Array([0]) }
+    let releaseA: (b: Blob) => void = () => {}
+    let releaseGoyf: (c: unknown) => void = () => {}
+    const fetchArtById = vi.fn((ref: string) => ref === 'refA' ? new Promise<Blob>((res) => { releaseA = res }) : Promise.reject(new Error('no art')))
+    const base = fakeServices()
+    const fetchCard = vi.fn((name: string) => name === 'Tarmogoyf' ? new Promise((res) => { releaseGoyf = res }) : base.client.fetchCard(name))
+    const s = fakeServices({ storage, fetchArtById, fetchCard: fetchCard as typeof base.client.fetchCard, decodeArt: async () => greyA })
+    const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
+    await act(() => result.current.render('Lightning Bolt'))
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
+    let loading!: Promise<void>, picking!: Promise<void>
+    act(() => { loading = result.current.render('Tarmogoyf') })
+    act(() => { picking = result.current.chooseArt('refA') })   // a pick for Bolt while Tarmogoyf loads
+    await act(async () => { releaseGoyf(await base.client.fetchCard('Tarmogoyf')); await loading })
+    await waitFor(() => expect(result.current.card?.name).toBe('Tarmogoyf'))
+    await act(async () => { releaseA(blob); await picking })
+    const card = result.current.card!
+    expect(card.name).toBe('Tarmogoyf')
+    const noArt = renderProxy(card.sheets[0], null, DEFAULT_SETTINGS, s.env).bits
+    await waitFor(() => expect(result.current.renders[0]?.bits.bits.every((v, i) => v === noArt.bits[i])).toBe(true))
+    expect(result.current.errors.some((e) => /Art could not be loaded/.test(e.message))).toBe(true)
+  })
   it('loadPrints fills prints, or printsError when the request fails', async () => {
     const prints = [{ ref: 'r1', artUrl: 'https://c/1.jpg', set: 'lea', released: '1993-08-05' }]
     const s = fakeServices({ fetchPrints: async () => prints })

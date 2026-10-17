@@ -42,10 +42,12 @@ export function useProxy(services: Services, settings: Settings) {
       const loaded = await loadCard(services, name)
       const a = await resolveArt(services, loaded.card)
       if (my !== seq.current) return
+      ++artSeq.current   // a pick for the previous card made while this one loaded must not land on it
       setCard(loaded.card); setMeldFailed(loaded.meldFailed); setArts(a)
       setArtRef(getPreferredArt(services.storage, loaded.card.name)); setState('rendered')
     } catch (e) {
       if (my !== seq.current) return
+      ++artSeq.current
       setCard(null); setArts([]); setMeldFailed(false); setArtRef(null); setRenders([])
       setErrors([e instanceof Error ? e : new Error(String(e))]); setState('error')
     }
