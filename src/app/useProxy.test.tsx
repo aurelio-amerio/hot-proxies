@@ -15,8 +15,9 @@ vi.mock('./browserEnv', async (orig) => ({
 
 const bolt = JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))
 const services: Services = {
-  client: { fetchCard: async () => bolt, fetchArtBlob: async () => { throw new Error('no art') } },
+  client: { fetchCard: async () => bolt, fetchArtBlob: async () => { throw new Error('no art') }, fetchPrints: async () => [], fetchArtById: async () => { throw new Error('unused') } },
   loadNames: async () => [],
+  loadTokens: async () => ({ version: 1, tokens: [] }),
   env: nodeEnv,
   storage: { getItem: () => null, setItem: () => {} },
   decodeArt: async () => { throw new Error('unused') },

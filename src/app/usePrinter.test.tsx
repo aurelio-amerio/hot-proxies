@@ -10,8 +10,8 @@ import type { BitImage } from '../core/art/types'
 
 function services(printer: FakePrinter): Services {
   return {
-    client: { fetchCard: async () => { throw new Error('unused') }, fetchArtBlob: async () => { throw new Error('unused') } },
-    loadNames: async () => [], env: nodeEnv, storage: { getItem: () => null, setItem: () => {} },
+    client: { fetchCard: async () => { throw new Error('unused') }, fetchArtBlob: async () => { throw new Error('unused') }, fetchPrints: async () => [], fetchArtById: async () => { throw new Error('unused') } },
+    loadNames: async () => [], loadTokens: async () => ({ version: 1, tokens: [] }), env: nodeEnv, storage: { getItem: () => null, setItem: () => {} },
     decodeArt: async () => { throw new Error('unused') }, printer,
   }
 }

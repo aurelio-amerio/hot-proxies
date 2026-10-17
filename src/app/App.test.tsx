@@ -6,21 +6,14 @@ import { readFileSync } from 'node:fs'
 import { App } from './App'
 import type { Services } from './services'
 import { CardNotFound, NetworkError } from '../core/errors'
-import { nodeEnv } from '../../tests/nodeEnv'
+import { fakeServices } from '../../tests/fakeServices'
 import { fakePrinter } from '../../tests/fakePrinter'
 
 const bolt = JSON.parse(readFileSync('tests/fixtures/cards/bolt.json', 'utf8'))
 const delver = JSON.parse(readFileSync('tests/fixtures/cards/delver.json', 'utf8'))
 
 function services(fetchCard: Services['client']['fetchCard'], printer = fakePrinter()): Services {
-  return {
-    client: { fetchCard, fetchArtBlob: async () => { throw new Error('no art in tests') } },
-    loadNames: async () => ['Lightning Bolt', 'Delver of Secrets'],
-    env: nodeEnv,
-    storage: { getItem: () => null, setItem: () => {} },
-    decodeArt: async () => { throw new Error('unused') },
-    printer,
-  }
+  return fakeServices({ fetchCard, printer, storage: { getItem: () => null, setItem: () => {} } })
 }
 vi.mock('./browserEnv', async (orig) => ({ ...(await orig<object>()), ensureFonts: async () => {} }))
 

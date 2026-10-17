@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
 import type { Services } from '../src/app/services'
-import { CardNotFound } from '../src/core/errors'
+import type { TokenIndex } from '../src/core/token/index'
+import type { GreyImage } from '../src/core/art/types'
+import type { Store } from '../src/core/art/preference'
+import { ArtUnavailable, CardNotFound } from '../src/core/errors'
 import { nodeEnv } from './nodeEnv'
 import { fakePrinter, type FakePrinter } from './fakePrinter'
 
@@ -10,8 +13,10 @@ export const FIXTURE_CARDS: Record<string, string> = {
   'delver of secrets': 'delver', 'delver of secrets // insectile aberration': 'delver', 'smuggler\'s copter': 'copter',
 }
 export const FIXTURE_NAMES = ['Lightning Bolt', 'Tarmogoyf', 'Forest', 'Nicol Bolas, the Ravager', 'Delver of Secrets // Insectile Aberration', "Smuggler's Copter"]
+export const FIXTURE_TOKENS = JSON.parse(readFileSync('tests/fixtures/tokens/index.json', 'utf8')) as TokenIndex
+export const FAKE_GREY: GreyImage = { width: 1, height: 1, data: new Float32Array([0]) }
 
-export function memoryStorage(): Pick<Storage, 'getItem' | 'setItem'> & { map: Map<string, string> } {
+export function memoryStorage(): Store & { map: Map<string, string> } {
   const map = new Map<string, string>()
   return { map, getItem: (k) => map.get(k) ?? null, setItem: (k, v) => { map.set(k, v) } }
 }
@@ -19,8 +24,12 @@ export function memoryStorage(): Pick<Storage, 'getItem' | 'setItem'> & { map: M
 export interface FakeServicesOptions {
   printer?: FakePrinter
   fetchCard?: Services['client']['fetchCard']
+  fetchPrints?: Services['client']['fetchPrints']
+  fetchArtById?: Services['client']['fetchArtById']
   loadNames?: Services['loadNames']
+  loadTokens?: Services['loadTokens']
   storage?: Pick<Storage, 'getItem' | 'setItem'>
+  decodeArt?: Services['decodeArt']
 }
 
 export function fakeServices(o: FakeServicesOptions = {}): Services & { printer: FakePrinter } {
@@ -30,11 +39,17 @@ export function fakeServices(o: FakeServicesOptions = {}): Services & { printer:
     return JSON.parse(readFileSync(`tests/fixtures/cards/${f}.json`, 'utf8'))
   })
   return {
-    client: { fetchCard, fetchArtBlob: async () => { throw new Error('no art in tests') } },
+    client: {
+      fetchCard,
+      fetchArtBlob: async () => { throw new Error('no art in tests') },
+      fetchPrints: o.fetchPrints ?? (async () => []),
+      fetchArtById: o.fetchArtById ?? (async () => { throw new ArtUnavailable() }),
+    },
     loadNames: o.loadNames ?? (async () => FIXTURE_NAMES),
+    loadTokens: o.loadTokens ?? (async () => FIXTURE_TOKENS),
     env: nodeEnv,
     storage: o.storage ?? memoryStorage(),
-    decodeArt: async () => { throw new Error('unused') },
+    decodeArt: o.decodeArt ?? (async () => { throw new Error('unused') }),
     printer: o.printer ?? fakePrinter('connected'),
   }
 }
