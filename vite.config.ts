@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['names.json', 'icons/*.png'],
+      includeAssets: ['names.json', 'tokens.json', 'icons/*.png'],
       manifest: {
         name: 'Hot Proxies', short_name: 'Hot Proxies', description: 'Black-and-white MTG proxies for thermal printers',
         theme_color: '#0a1625', background_color: '#f5f3e8', display: 'standalone', start_url: base, scope: base,
