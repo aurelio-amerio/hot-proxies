@@ -83,7 +83,7 @@ export function prototypeFaces(face: Face): { main: Face; sub: Face } | null {
       name: 'Prototype',
       manaCost: m[1],
       typeLine: '',
-      oracleText: m[4] ?? '',
+      oracleText: m[4] ? `(${m[4]})` : '',
       stat: { kind: 'pt', power: m[2], toughness: m[3] },
     },
   }
