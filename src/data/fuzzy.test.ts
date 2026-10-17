@@ -21,3 +21,14 @@ describe('createMatcher', () => {
     expect(m.search('')).toEqual([]); expect(m.search('   ')).toEqual([])
   })
 })
+
+describe('half-name matching', () => {
+  const m = createMatcher(['Fire // Ice', 'Bonecrusher Giant // Stomp', 'Lightning Bolt'])
+  it('finds a multi-face card by its second half', () => {
+    expect(m.search('stomp')).toEqual(['Bonecrusher Giant // Stomp'])
+  })
+  it('returns a card once when both its full name and a half match', () => {
+    expect(m.search('ice')).toEqual(['Fire // Ice'])
+    expect(m.search('fire //')).toEqual(['Fire // Ice'])
+  })
+})

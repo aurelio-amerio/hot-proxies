@@ -130,3 +130,19 @@ describe('fetchArtById', () => {
     await expect(setup([new TypeError('Failed to fetch')]).client.fetchArtById(HEX)).rejects.toBeInstanceOf(ArtUnavailable)
   })
 })
+
+describe('fetchCardById', () => {
+  const id = '3c1e4a4e-6c6e-4d4c-8f3a-000000000001'
+  it('GETs /cards/<id> once and caches the result', async () => {
+    const { client, calls, fetchFn } = setup([json({ object: 'card', id })])
+    expect(await client.fetchCardById(id)).toMatchObject({ id })
+    await client.fetchCardById(id)
+    expect(calls).toEqual([`https://api.scryfall.com/cards/${id}`])
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+  })
+  it('throws CardNotFound on 404 and NetworkError on other failures', async () => {
+    const { client } = setup([json({}, 404), json({}, 500)])
+    await expect(client.fetchCardById(id)).rejects.toBeInstanceOf(CardNotFound)
+    await expect(client.fetchCardById(id)).rejects.toBeInstanceOf(NetworkError)
+  })
+})

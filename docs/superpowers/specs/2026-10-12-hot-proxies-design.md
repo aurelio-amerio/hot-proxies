@@ -32,7 +32,7 @@ chosen so they slot in without rework.
 |---|---|
 | Card size | Width = printable width of the roll, 384 dots (48 mm at 203 dpi). Height follows the real 63:88 card ratio: 536 dots. Both are constants in `printer.ts` and user-editable settings. |
 | Data | Local name index for autocomplete only. Every card lookup goes to Scryfall. |
-| Layouts | `normal` only. Other layouts raise `UnsupportedLayout`. |
+| Layouts | Every layout except the excluded set (planar, scheme, vanguard, art_series, augment, host raise `UnsupportedLayout`); see `2026-10-17-card-layouts-design.md`. |
 | Art style | Four selectable 1-bit styles: Atkinson (default), Floyd–Steinberg, Bayer 4×4 ordered, plain threshold; block size 1 (default) or 2. Blocks of 3 or more were tested and are unreadable. |
 | Symbols | Vendored SVG glyphs from the Mana project (`mana-master/svg`, SIL OFL), drawn inside a white circle with a black outline, inline in cost line and rules text. |
 | Extras | None: no set code, collector number, artist, flavor text or color indicator. Reminder text in parentheses is stripped by default (setting). |
@@ -86,7 +86,7 @@ Boundaries:
 
 `scripts/build-name-index.ts` reads `oracle-cards-*.jsonl` and writes
 `public/names.json` as an array of `[name, oracle_id]` for cards whose `layout`
-is `normal` and whose `set_type` is not `token`, `memorabilia` or `minigame`.
+is any layout except the excluded set (see `2026-10-17-card-layouts-design.md`) and whose `set_type` is not `token`, `memorabilia` or `minigame`.
 About 33,000 entries, roughly 1 MB raw and 250 KB gzipped. The JSONL is
 gitignored; the JSON output is committed and refreshed by rerunning the script.
 

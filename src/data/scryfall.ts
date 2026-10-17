@@ -121,7 +121,17 @@ export function createScryfallClient(o: ScryfallOptions): ScryfallClient {
       await o.cache.set(key, out)
       return out
     },
-    async fetchCardById() { throw new Error('not implemented') },
+    async fetchCardById(id) {
+      const key = `card:id:${id}`
+      const hit = await o.cache.get<unknown>(key)
+      if (hit) return hit
+      const res = await request(`${API}/cards/${id}`)
+      if (res.status === 404) throw new CardNotFound(id)
+      if (!res.ok) throw new NetworkError(`Scryfall responded with HTTP ${res.status}.`)
+      const card: unknown = await res.json()
+      await o.cache.set(key, card)
+      return card
+    },
     async fetchArtById(ref) {
       const key = `art:${ref}`
       const hit = await o.cache.get<Blob>(key)

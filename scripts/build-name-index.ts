@@ -1,8 +1,10 @@
-/** JSONL oracle dump -> public/names.json (sorted unique names of normal-layout playable cards).
+/** JSONL oracle dump -> public/names.json (sorted unique names of every supported-layout playable card).
  *  Run: npm run build:names -- oracle-cards-YYYYMMDDhhmmss.jsonl */
 import { createReadStream, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline'
+import { EXCLUDED_LAYOUTS } from '../src/core/card/normalize'
 
+const TOKEN_LAYOUTS = new Set(['token', 'double_faced_token', 'emblem'])
 const EXCLUDED_SET_TYPES = new Set(['token', 'memorabilia', 'minigame'])
 
 export async function buildNameIndex(inputPath: string, outputPath: string): Promise<number> {
@@ -11,7 +13,8 @@ export async function buildNameIndex(inputPath: string, outputPath: string): Pro
   for await (const line of rl) {
     if (!line.trim()) continue
     const c = JSON.parse(line) as { name?: string; layout?: string; set_type?: string }
-    if (c.layout !== 'normal' || !c.name || EXCLUDED_SET_TYPES.has(c.set_type ?? '')) continue
+    const layout = c.layout ?? ''
+    if (!c.name || !layout || EXCLUDED_LAYOUTS.has(layout) || TOKEN_LAYOUTS.has(layout) || EXCLUDED_SET_TYPES.has(c.set_type ?? '')) continue
     names.add(c.name)
   }
   const sorted = [...names].sort((a, b) => a.localeCompare(b))

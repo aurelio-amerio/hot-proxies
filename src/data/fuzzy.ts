@@ -14,11 +14,23 @@ function dice(a: Set<string>, b: Set<string>): number {
   return (2 * hit) / (a.size + b.size)
 }
 
+/** Keep one entry per full name, with its best score. */
+function addBest(scored: { name: string; score: number }[], name: string, score: number): void {
+  const prev = scored.find((s) => s.name === name)
+  if (!prev) scored.push({ name, score })
+  else if (score > prev.score) prev.score = score
+}
+
 export interface Matcher { search(query: string, limit?: number): string[] }
 
-/** Ranked name lookup: prefix (3) > word prefix (2) > substring (1) > bigram similarity (0..1). */
+/** Ranked name lookup: prefix (3) > word prefix (2) > substring (1) > bigram similarity (0..1).
+ *  Each half of a multi-face name ("A // B") is also an alias that resolves to the full name. */
 export function createMatcher(names: string[]): Matcher {
-  const entries = names.map((name) => ({ name, norm: normalizeName(name), grams: null as Set<string> | null }))
+  const entries = names.flatMap((name) => {
+    const norm = normalizeName(name)
+    const halves = norm.includes(' // ') ? norm.split(' // ') : []
+    return [norm, ...halves].map((n) => ({ name, norm: n, grams: null as Set<string> | null }))
+  })
   return {
     search(query, limit = 8) {
       const q = normalizeName(query)
@@ -29,7 +41,7 @@ export function createMatcher(names: string[]): Matcher {
         if (e.norm.startsWith(q)) score = 3
         else if (e.norm.includes(' ' + q)) score = 2
         else if (e.norm.includes(q)) score = 1
-        if (score) scored.push({ name: e.name, score })
+        if (score) addBest(scored, e.name, score)
       }
       if (scored.length < limit && q.length >= 4) {
         const qg = bigrams(q)
