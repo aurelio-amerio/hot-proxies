@@ -13,7 +13,7 @@ const MODES: { value: Mode; label: string; icon: React.ReactElement }[] = [
   { value: 'tokens', label: 'Tokens', icon: <TokenIcon /> },
 ]
 
-/** Card | Deck | Tokens switch, styled as a pair of chips to sit beside the printer chip. */
+/** Card | Deck | Tokens switch, styled as a row of three chips to sit beside the printer chip. */
 export function ModeSwitch({ mode, onChange }: ModeSwitchProps) {
   return (
     <Stack direction="row" spacing={0.5} role="group" aria-label="Mode" data-testid="mode-switch">
