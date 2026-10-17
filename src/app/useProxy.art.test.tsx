@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { standardSheet } from '../core/card/types'
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useProxy } from './useProxy'
@@ -21,7 +20,7 @@ describe('useProxy art preference', () => {
     const s = fakeServices({ storage, fetchArtById, decodeArt: async () => grey })
     const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
     await act(() => result.current.render('Lightning Bolt'))
-    await waitFor(() => expect(result.current.bits).not.toBeNull())
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
     expect(fetchArtById).toHaveBeenCalledWith('ref1')
     expect(result.current.artRef).toBe('ref1')
     expect(result.current.errors).toEqual([])
@@ -32,7 +31,7 @@ describe('useProxy art preference', () => {
     const s = fakeServices({ storage, fetchArtById, decodeArt: async () => grey })
     const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
     await act(() => result.current.render('Lightning Bolt'))
-    await waitFor(() => expect(result.current.bits).not.toBeNull())
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
     expect(result.current.errors.some((e) => /Art could not be loaded/.test(e.message))).toBe(true)   // default art throws in tests
     await act(() => result.current.chooseArt('ref9'))
     expect(getPreferredArt(storage, 'Lightning Bolt')).toBe('ref9')
@@ -41,6 +40,22 @@ describe('useProxy art preference', () => {
     await act(() => result.current.chooseArt(null))
     expect(getPreferredArt(storage, 'Lightning Bolt')).toBeNull()
     expect(result.current.artRef).toBeNull()
+  })
+  it('chooseArt keys the preference on the full card name and re-resolves every sheet', async () => {
+    const storage = memoryStorage()
+    const fetchArtById = vi.fn(async () => blob)
+    const fetchPrints = vi.fn(async () => [])
+    const s = fakeServices({ storage, fetchArtById, fetchPrints, decodeArt: async () => grey })
+    const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
+    await act(() => result.current.render('Delver of Secrets'))
+    await waitFor(() => expect(result.current.renders).toHaveLength(2))
+    await act(() => result.current.loadPrints())
+    expect(fetchPrints).toHaveBeenCalledWith('Delver of Secrets // Insectile Aberration')
+    await act(() => result.current.chooseArt('ref7'))
+    expect(getPreferredArt(storage, 'Delver of Secrets // Insectile Aberration')).toBe('ref7')
+    expect(fetchArtById).toHaveBeenCalledWith('ref7')
+    expect(fetchArtById).toHaveBeenCalledWith('ref7:1')
+    await waitFor(() => expect(result.current.errors).toEqual([]))
   })
   it('a slow earlier chooseArt cannot overwrite a later pick', async () => {
     const storage = memoryStorage()
@@ -52,19 +67,19 @@ describe('useProxy art preference', () => {
     const s = fakeServices({ storage, fetchArtById, decodeArt: async (b: Blob) => (b === blobA ? greyA : greyB) })
     const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
     await act(() => result.current.render('Lightning Bolt'))
-    await waitFor(() => expect(result.current.bits).not.toBeNull())
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
     const card = result.current.card!
-    const withA = renderProxy(standardSheet(card), greyA, DEFAULT_SETTINGS, s.env).bits, withB = renderProxy(standardSheet(card), greyB, DEFAULT_SETTINGS, s.env).bits
+    const withA = renderProxy(card.sheets[0], greyA, DEFAULT_SETTINGS, s.env).bits, withB = renderProxy(card.sheets[0], greyB, DEFAULT_SETTINGS, s.env).bits
     const same = (x: BitImage | null, y: BitImage) => !!x && x.bits.every((v, i) => v === y.bits[i])
     expect(same(withA, withB)).toBe(false)
     let first!: Promise<void>
     act(() => { first = result.current.chooseArt('refA') })
     await act(() => result.current.chooseArt('refB'))
-    await waitFor(() => expect(same(result.current.bits, withB)).toBe(true))
+    await waitFor(() => expect(same(result.current.renders[0]?.bits ?? null, withB)).toBe(true))
     await act(async () => { releaseA(blobA); await first })
     expect(getPreferredArt(storage, 'Lightning Bolt')).toBe('refB')
     expect(result.current.artRef).toBe('refB')
-    await waitFor(() => expect(same(result.current.bits, withB)).toBe(true))
+    await waitFor(() => expect(same(result.current.renders[0]?.bits ?? null, withB)).toBe(true))
   })
   it('loadPrints fills prints, or printsError when the request fails', async () => {
     const prints = [{ ref: 'r1', artUrl: 'https://c/1.jpg', set: 'lea', released: '1993-08-05' }]

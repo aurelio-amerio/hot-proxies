@@ -9,8 +9,8 @@ import type { Store } from '../core/art/preference'
 import type { GreyImage, BitImage } from '../core/art/types'
 import type { Geometry } from '../core/layout/fit'
 import { renderProxy } from '../core/render/renderProxy'
-import { toPacked } from '../core/output/packed'
-import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpos'
+import { escposInit } from '../core/output/escpos'
+import { sheetFrames } from '../core/printer/sheets'
 import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
 import { printJob, type PrinterState } from '../core/printer/transport'
 import { ensureFonts } from './browserEnv'
@@ -106,15 +106,14 @@ export function useTokens(services: Services, settings: Settings) {
     return () => { on = false }
   }, [card, art, settings, services.env])
 
-  /** One job: ESC @, then per copy the raster frames and a gap feed; the last copy gets the tail feed. */
+  /** One job: ESC @, then per copy the sheet frames with a gap feed; the last copy gets the tail feed. */
   const print = useCallback(async () => {
     const printer = services.printer
     if (!bits || !draft || printer.state !== 'connected') return
     setPrinting(true); setPrintError(null); setProgress(0)
-    const packed = toPacked(bits)
     const frames: Uint8Array[] = [escposInit()]
     for (let i = 0; i < draft.copies; i++) {
-      frames.push(...escposRasterFrames(packed, bits.width, bits.height), escposFeed(i === draft.copies - 1 ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS))
+      frames.push(...sheetFrames([bits], i === draft.copies - 1 ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS))
     }
     const ac = new AbortController(); abort.current = ac
     try {

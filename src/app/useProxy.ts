@@ -1,32 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
-import { sheetFaces, standardSheet, type CardData } from '../core/card/types'
-import type { GreyImage, BitImage } from '../core/art/types'
+import type { ProxyCard } from '../core/card/types'
+import type { BitImage } from '../core/art/types'
 import type { Geometry } from '../core/layout/fit'
 import type { Printing } from '../data/scryfall'
-import { normalizeScryfall } from '../core/card/normalize'
 import { renderProxy } from '../core/render/renderProxy'
-import { ArtUnavailable } from '../core/errors'
+import { ArtUnavailable, MeldUnavailable } from '../core/errors'
 import { getPreferredArt, setPreferredArt } from '../core/art/preference'
 import { ensureFonts } from './browserEnv'
 import { fontFallbackMessage } from './fontFallback'
-import { resolveArt } from './resolveArt'
-
-/** Temporary single-sheet adapter until the hook is rewritten for ProxyCard. */
-const resolveCardArt = async (services: Services, face: CardData) => (await resolveArt(services, { name: face.name, sheets: [standardSheet(face)] }))[0]
+import { loadCard } from './loadCard'
+import { resolveArt, type ResolvedArt } from './resolveArt'
 
 export type ProxyState = 'idle' | 'loading' | 'rendered' | 'error'
 export const PRINTS_ERROR = 'Could not load other printings.'
 
+export interface SheetRender { bits: BitImage; geometry: Geometry }
+
+/** Card mode: one card, the art for each of its sheets, and one render per sheet. */
 export function useProxy(services: Services, settings: Settings) {
   const [state, setState] = useState<ProxyState>('idle')
-  const [card, setCard] = useState<CardData | null>(null)
-  const [art, setArt] = useState<GreyImage | null>(null)
-  const [artFailed, setArtFailed] = useState(false)
+  const [card, setCard] = useState<ProxyCard | null>(null)
+  const [arts, setArts] = useState<ResolvedArt[]>([])
+  const [meldFailed, setMeldFailed] = useState(false)
   const [artRef, setArtRef] = useState<string | null>(null)
-  const [bits, setBits] = useState<BitImage | null>(null)
-  const [geometry, setGeometry] = useState<Geometry | null>(null)
+  const [renders, setRenders] = useState<SheetRender[]>([])
   const [errors, setErrors] = useState<Error[]>([])
   const [fontError, setFontError] = useState<Error | null>(null)
   const [prints, setPrints] = useState<Printing[] | null>(null)
@@ -40,26 +39,27 @@ export function useProxy(services: Services, settings: Settings) {
     ++artSeq.current
     setState('loading'); setErrors([]); setPrints(null); setPrintsError(null)
     try {
-      const c = sheetFaces(normalizeScryfall(await services.client.fetchCard(name)).sheets[0])[0]
-      const r = await resolveCardArt(services, c)
+      const loaded = await loadCard(services, name)
+      const a = await resolveArt(services, loaded.card)
       if (my !== seq.current) return
-      setCard(c); setArt(r.art); setArtFailed(r.failed); setArtRef(getPreferredArt(services.storage, c.name)); setState('rendered')
+      setCard(loaded.card); setMeldFailed(loaded.meldFailed); setArts(a)
+      setArtRef(getPreferredArt(services.storage, loaded.card.name)); setState('rendered')
     } catch (e) {
       if (my !== seq.current) return
-      setCard(null); setArt(null); setArtFailed(false); setArtRef(null); setBits(null); setGeometry(null)
+      setCard(null); setArts([]); setMeldFailed(false); setArtRef(null); setRenders([])
       setErrors([e instanceof Error ? e : new Error(String(e))]); setState('error')
     }
   }, [services])
 
-  /** Remember a printing for this card name (null = default art) and reload the art. */
+  /** Remember a printing for this card name (null = default art) and reload the art of every sheet. */
   const chooseArt = useCallback(async (ref: string | null) => {
     if (!card) return
     setPreferredArt(services.storage, card.name, ref)
     setArtRef(ref)
     const my = ++artSeq.current
-    const r = await resolveCardArt(services, card)
+    const a = await resolveArt(services, card)
     if (my !== artSeq.current) return
-    setArt(r.art); setArtFailed(r.failed)
+    setArts(a)
   }, [services, card])
 
   const loadPrints = useCallback(async () => {
@@ -69,15 +69,17 @@ export function useProxy(services: Services, settings: Settings) {
     catch { setPrintsError(PRINTS_ERROR) }
   }, [services, card])
 
-  // Re-render whenever the card, art or settings change.
+  // Re-render every sheet whenever the card, art or settings change.
   useEffect(() => {
     if (!card) return
     let on = true
     const draw = (fontError: Error | null) => {
       if (!on) return
       setFontError(fontError)
-      const r = renderProxy(standardSheet(card), art, settings, services.env)
-      setBits(r.bits); setGeometry(r.geometry)
+      setRenders(card.sheets.map((sheet, i) => {
+        const r = renderProxy(sheet, arts[i]?.art ?? null, settings, services.env)
+        return { bits: r.bits, geometry: r.geometry }
+      }))
     }
     // A missing font (e.g. MPlantin without the local file) must not stall rendering: fall back and warn.
     ensureFonts(settings.fontFamily).then(
@@ -85,12 +87,17 @@ export function useProxy(services: Services, settings: Settings) {
       () => draw(new Error(fontFallbackMessage(settings.fontFamily))),
     )
     return () => { on = false }
-  }, [card, art, settings, services.env])
+  }, [card, arts, settings, services.env])
 
   const allErrors = useMemo(
-    () => [...errors, ...(artFailed ? [new ArtUnavailable()] : []), ...(fontError ? [fontError] : [])],
-    [errors, artFailed, fontError],
+    () => [
+      ...errors,
+      ...(meldFailed ? [new MeldUnavailable()] : []),
+      ...(arts.some((a) => a.failed) ? [new ArtUnavailable()] : []),
+      ...(fontError ? [fontError] : []),
+    ],
+    [errors, meldFailed, arts, fontError],
   )
 
-  return { state, card, bits, geometry, errors: allErrors, render, artRef, chooseArt, prints, printsError, loadPrints }
+  return { state, card, renders, errors: allErrors, render, artRef, chooseArt, prints, printsError, loadPrints }
 }

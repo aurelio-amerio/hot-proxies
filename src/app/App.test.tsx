@@ -28,6 +28,21 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByTestId('preview')).toBeInTheDocument())
     expect(screen.getByText(/Art could not be loaded/)).toBeInTheDocument()
   })
+  it('shows Front and Back previews for a two-faced card', async () => {
+    render(<App services={fakeServices({ storage: { getItem: () => null, setItem: () => {} } })} />)
+    await pick('Delver of Secrets')
+    await waitFor(() => expect(screen.getAllByTestId('preview')).toHaveLength(2))
+    expect(screen.getByText('Front')).toBeInTheDocument()
+    expect(screen.getByText('Back')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Print' })).toHaveLength(1)
+  })
+  it('shows no captions for a one-sheet card', async () => {
+    render(<App services={services(async () => bolt)} />)
+    await pick('Lightning Bolt')
+    await waitFor(() => expect(screen.getByTestId('preview')).toBeInTheDocument())
+    expect(screen.queryByText('Front')).toBeNull()
+    expect(screen.queryByText('Back')).toBeNull()
+  })
   it('shows CardNotFound', async () => {
     render(<App services={services(async (n) => { throw new CardNotFound(n) })} />)
     await pick('Nope')

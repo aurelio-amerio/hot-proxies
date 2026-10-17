@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { BitImage } from '../core/art/types'
-import { toPacked } from '../core/output/packed'
-import { encodeEscPosFrames } from '../core/output/escpos'
+import { escposInit } from '../core/output/escpos'
+import { sheetFrames } from '../core/printer/sheets'
+import { FEED_LINES_AFTER } from '../core/printer'
 import { printJob, PrinterCancelled, NotAPrinter, type PrinterState } from '../core/printer/transport'
 
 export const PRINTER_MESSAGES = {
@@ -32,10 +33,11 @@ export function usePrinter(services: Services) {
 
   const disconnect = useCallback(async () => { setError(null); await printer.disconnect() }, [printer])
 
-  const print = useCallback(async (bits: BitImage) => {
+  /** One job for one card: ESC @, then every sheet (a fold pair gets the fold guide and the rotated back), then the tail feed. */
+  const print = useCallback(async (sheets: BitImage[]) => {
     if (printer.state !== 'connected') return
     setError(null); setProgress(0)
-    const frames = encodeEscPosFrames(toPacked(bits), bits.width, bits.height)
+    const frames = [escposInit(), ...sheetFrames(sheets, FEED_LINES_AFTER)]
     const ac = new AbortController(); abort.current = ac
     try {
       await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => setProgress(total ? sent / total : 0) })

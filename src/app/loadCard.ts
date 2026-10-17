@@ -8,9 +8,8 @@ export interface LoadedCard { card: ProxyCard; meldFailed: boolean }
 export async function loadCard(services: Services, name: string): Promise<LoadedCard> {
   const card = normalizeScryfall(await services.client.fetchCard(name))
   if (!card.meldResult) return { card, meldFailed: false }
-  try {
-    return { card: attachMeldBack(card, await services.client.fetchCardById(card.meldResult)), meldFailed: false }
-  } catch {
-    return { card, meldFailed: true }
-  }
+  let result: unknown
+  try { result = await services.client.fetchCardById(card.meldResult) }
+  catch { return { card, meldFailed: true } }
+  return { card: attachMeldBack(card, result), meldFailed: false }
 }

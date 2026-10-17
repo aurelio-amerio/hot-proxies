@@ -36,7 +36,7 @@ export const FAN_CONTENT_POLICY_URL = 'https://company.wizards.com/en/legal/fanc
 export function App({ services }: { services: Services }) {
   const [settings, update, reset] = useSettings(services.storage)
   const proxy = useProxy(services, settings)
-  const { state, card, bits, geometry, errors, render } = proxy
+  const { state, card, renders, errors, render } = proxy
   const [drawer, setDrawer] = useState(false)
   const [artOpen, setArtOpen] = useState(false)
   const printer = usePrinter(services)
@@ -66,13 +66,22 @@ export function App({ services }: { services: Services }) {
             <SearchBox loadNames={services.loadNames} onPick={render} />
             {state === 'loading' && <LinearProgress />}
             {errors.map((e, i) => <Alert key={i} severity={state === 'error' ? 'error' : 'info'}>{e.message}</Alert>)}
-            {geometry?.overflow && <Alert severity="warning">Rules text was clipped to fit.</Alert>}
+            {renders.map((r, i) => r.geometry.overflow && (
+              <Alert key={i} severity="warning">{renders.length > 1 ? `Rules text on the ${i === 0 ? 'front' : 'back'} was clipped to fit.` : 'Rules text was clipped to fit.'}</Alert>
+            ))}
             {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
-            {state === 'rendered' && card && bits && geometry && (
-              <EditablePreview bits={bits} geometry={geometry} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
-                enabled={['art']} disabled={printer.state === 'printing'}
-                onEdit={() => { setArtOpen(true); void proxy.loadPrints() }}
-                print={{ state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(bits) }, onCancel: printer.cancel }} />
+            {state === 'rendered' && card && renders.length > 0 && (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { xs: 'center', sm: 'flex-start' }, justifyContent: 'center' }}>
+                {renders.map((r, i) => (
+                  <Stack key={i} spacing={0.5} sx={{ alignItems: 'center', minWidth: 0, width: '100%', flex: { sm: '1 1 0' } }}>
+                    {renders.length > 1 && <Typography variant="caption" color="text.secondary">{i === 0 ? 'Front' : 'Back'}</Typography>}
+                    <EditablePreview bits={r.bits} geometry={r.geometry} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
+                      enabled={i === 0 ? ['art'] : []} disabled={printer.state === 'printing'}
+                      onEdit={() => { setArtOpen(true); void proxy.loadPrints() }}
+                      print={i === 0 ? { state: printer.state, progress: printer.progress, onPrint: () => { void printer.print(renders.map((x) => x.bits)) }, onCancel: printer.cancel } : undefined} />
+                  </Stack>
+                ))}
+              </Stack>
             )}
             <ArtPickerDialog open={artOpen && mode === 'card'} current={proxy.artRef} noneLabel="Default art"
               options={proxy.prints?.map((p) => ({ ref: p.ref, thumbUrl: p.artUrl, label: `${p.set.toUpperCase()} ${p.released}` })) ?? null}

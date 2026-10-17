@@ -19,6 +19,11 @@ describe('loadCard', () => {
     const { card, meldFailed } = await loadCard(s, 'Hanweir Battlements')
     expect(card.sheets).toHaveLength(1); expect(meldFailed).toBe(true)
   })
+  it('lets errors after the melded card was fetched propagate instead of flagging meldFailed', async () => {
+    const plane = await fakeServices().client.fetchCard('Academy at Tolaria West')
+    const s = fakeServices({ fetchCardById: async () => plane })
+    await expect(loadCard(s, 'Hanweir Battlements')).rejects.toBeInstanceOf(UnsupportedLayout)
+  })
   it('rejects unsupported layouts', async () => {
     await expect(loadCard(fakeServices(), 'Academy at Tolaria West')).rejects.toBeInstanceOf(UnsupportedLayout)
   })

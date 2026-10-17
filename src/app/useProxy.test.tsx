@@ -7,6 +7,7 @@ import type { Services } from './services'
 import { DEFAULT_SETTINGS } from '../core/settings'
 import { nodeEnv } from '../../tests/nodeEnv'
 import { fakePrinter } from '../../tests/fakePrinter'
+import { fakeServices } from '../../tests/fakeServices'
 
 vi.mock('./browserEnv', async (orig) => ({
   ...(await orig<object>()),
@@ -29,7 +30,20 @@ describe('useProxy', () => {
     const settings = { ...DEFAULT_SETTINGS, fontFamily: 'MPlantin' as const }
     const { result } = renderHook(() => useProxy(services, settings))
     await act(() => result.current.render('Lightning Bolt'))
-    await waitFor(() => expect(result.current.bits).not.toBeNull())
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
     expect(result.current.errors.some((e) => /MPlantin/.test(e.message))).toBe(true)
+  })
+  it('renders both sheets of a two-faced card', async () => {
+    const { result } = renderHook(() => useProxy(fakeServices(), DEFAULT_SETTINGS))
+    await act(() => result.current.render('Delver of Secrets'))
+    await waitFor(() => expect(result.current.renders).toHaveLength(2))
+    for (const r of result.current.renders) expect([r.bits.width, r.bits.height]).toEqual([384, 536])
+  })
+  it('renders the front alone and reports MeldUnavailable when the melded card cannot be fetched', async () => {
+    const s = fakeServices({ fetchCardById: async () => { throw new Error('offline') } })
+    const { result } = renderHook(() => useProxy(s, DEFAULT_SETTINGS))
+    await act(() => result.current.render('Hanweir Battlements'))
+    await waitFor(() => expect(result.current.renders).toHaveLength(1))
+    expect(result.current.errors.map((e) => e.message)).toContain('Melded side could not be loaded.')
   })
 })
