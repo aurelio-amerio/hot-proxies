@@ -22,12 +22,14 @@ export function tokenName(name: string): string {
 }
 
 const SKIP_LAYOUTS = new Set(['art_series'])
+/** Checklists and substitute cards are print helpers, not tokens. */
+const JUNK_NAME = /Checklist|Substitute Card/i
 
 /** The faces of one raw card that belong in the index: 0, 1 or 2 records. */
 export function faceRecords(json: unknown): FaceRecord[] {
   const raw = (json ?? {}) as Raw
   const id = str(raw.id)
-  if (!id || SKIP_LAYOUTS.has(str(raw.layout) ?? '') || str(raw.set_type) === 'memorabilia') return []
+  if (!id || SKIP_LAYOUTS.has(str(raw.layout) ?? '') || str(raw.set_type) === 'memorabilia' || JUNK_NAME.test(str(raw.name) ?? '')) return []
   const released = str(raw.released_at) ?? '0000-00-00'
   const faces = Array.isArray(raw.card_faces) && raw.card_faces.length ? (raw.card_faces as Raw[]) : [raw]
   const out: FaceRecord[] = []
@@ -35,7 +37,7 @@ export function faceRecords(json: unknown): FaceRecord[] {
     const name = str(f.name), typeLine = str(f.type_line)
     if (!name || !typeLine) return
     const oracleText = str(f.oracle_text) ?? ''
-    if (typeLine === 'Card' && oracleText === '') return   // punch-out counters and other blanks
+    if (typeLine === 'Card' && oracleText === '' && /\bCounter\b/i.test(name)) return   // punch-out counters (City's Blessing stays)
     const rec: FaceRecord = { name: tokenName(name), typeLine, oracleText, ref: artRef(id, i as 0 | 1), released }
     const power = str(f.power), toughness = str(f.toughness)
     if (power !== undefined && toughness !== undefined) { rec.power = power; rec.toughness = toughness }

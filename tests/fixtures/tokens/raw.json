@@ -9,5 +9,8 @@
   {"id":"aaaaaaaa-0000-4000-8000-000000000006","name":"Emblem — Ajani, Adversary of Tyrants","layout":"emblem","set_type":"token","released_at":"2018-07-13","type_line":"Emblem — Ajani","oracle_text":"At the beginning of your end step, create a 1/1 white Cat creature token with lifelink."},
   {"id":"aaaaaaaa-0000-4000-8000-000000000007","name":"Goblin // Goblin","layout":"art_series","set_type":"memorabilia","released_at":"2021-01-01","type_line":"Card // Card"},
   {"id":"aaaaaaaa-0000-4000-8000-000000000008","name":"Poison Counter","layout":"token","set_type":"token","released_at":"2023-02-03","type_line":"Card","oracle_text":""},
-  {"id":"aaaaaaaa-0000-4000-8000-000000000009","name":"Treasure","layout":"token","set_type":"token","released_at":"2023-09-08","type_line":"Token Artifact — Treasure","oracle_text":"{T}, Sacrifice this artifact: Add one mana of any color."}
+  {"id":"aaaaaaaa-0000-4000-8000-000000000009","name":"Treasure","layout":"token","set_type":"token","released_at":"2023-09-08","type_line":"Token Artifact — Treasure","oracle_text":"{T}, Sacrifice this artifact: Add one mana of any color."},
+  {"id":"aaaaaaaa-0000-4000-8000-00000000000a","name":"City's Blessing","layout":"token","set_type":"token","released_at":"2017-09-29","type_line":"Card","oracle_text":""},
+  {"id":"aaaaaaaa-0000-4000-8000-00000000000b","name":"Innistrad Checklist","layout":"token","set_type":"token","released_at":"2011-09-30","type_line":"Card","oracle_text":"Delver of Secrets"},
+  {"id":"aaaaaaaa-0000-4000-8000-00000000000c","name":"Double-Faced Substitute Card","layout":"token","set_type":"token","released_at":"2011-09-30","type_line":"Card","oracle_text":""}
 ]

@@ -32,13 +32,18 @@ describe('faceRecords', () => {
     expect(faceRecords({ id: 'x', layout: 'token', set_type: 'memorabilia', type_line: 'Card', oracle_text: 'text', name: 'Gift' })).toEqual([])
     expect(faceRecords(null)).toEqual([])
   })
+  it('keeps a blank "Card" unless it is a counter, and skips checklists and substitute cards', () => {
+    expect(faceRecords(raw[9]).map((r) => [r.name, r.typeLine, r.oracleText])).toEqual([["City's Blessing", 'Card', '']])
+    expect(faceRecords(raw[10])).toEqual([])
+    expect(faceRecords(raw[11])).toEqual([])
+  })
 })
 
 describe('tokenIndexFromCards', () => {
   const index = tokenIndexFromCards(raw)
   it('has version 1 and sorted unique names', () => {
     expect(index.version).toBe(1)
-    expect(index.tokens.map((t) => t.name)).toEqual(['Ajani, Adversary of Tyrants Emblem', 'Goblin', 'Soldier', 'The Monarch', 'Treasure'])
+    expect(index.tokens.map((t) => t.name)).toEqual(['Ajani, Adversary of Tyrants Emblem', "City's Blessing", 'Goblin', 'Soldier', 'The Monarch', 'Treasure'])
   })
   it('groups Goblin into two variants, most printed then newest first, prints newest first', () => {
     const goblin = index.tokens.find((t) => t.name === 'Goblin')!
