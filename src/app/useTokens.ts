@@ -29,8 +29,8 @@ export function useTokens(services: Services, settings: Settings) {
   const [indexError, setIndexError] = useState<string | null>(null)
   const [draft, setDraftState] = useState<TokenDraft | null>(() => loadDraft(services.storage))
   const [touched, setTouched] = useState(false)
-  const [art, setArt] = useState<GreyImage | null>(null)
-  const [artFailed, setArtFailed] = useState(false)
+  /** Art as loaded, tagged with the ref it belongs to so a stale image never reaches the render. */
+  const [loaded, setLoaded] = useState<{ ref: string; art: GreyImage | null; failed: boolean } | null>(null)
   const [bits, setBits] = useState<BitImage | null>(null)
   const [geometry, setGeometry] = useState<Geometry | null>(null)
   const [fontError, setFontError] = useState<string | null>(null)
@@ -73,16 +73,19 @@ export function useTokens(services: Services, settings: Settings) {
     })
   }, [persist])
 
-  // Art follows the draft's art ref.
+  // Art follows the draft's art ref; until the new ref's art arrives the card renders without art.
   const ref = draft?.artRef ?? null
   useEffect(() => {
     const my = ++artSeq.current
-    if (!ref) { setArt(null); setArtFailed(false); return }
+    if (!ref) { setLoaded(null); return }
     services.client.fetchArtById(ref).then(services.decodeArt).then(
-      (g) => { if (my === artSeq.current) { setArt(g); setArtFailed(false) } },
-      () => { if (my === artSeq.current) { setArt(null); setArtFailed(true) } },
+      (g) => { if (my === artSeq.current) setLoaded({ ref, art: g, failed: false }) },
+      () => { if (my === artSeq.current) setLoaded({ ref, art: null, failed: true }) },
     )
   }, [ref, services])
+  const current = loaded && loaded.ref === ref ? loaded : null
+  const art = current?.art ?? null
+  const artFailed = current?.failed ?? false
 
   // Re-render whenever the card, art or settings change.
   const card = draft?.card ?? null

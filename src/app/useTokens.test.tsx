@@ -9,6 +9,9 @@ import { draftFromVariant } from '../core/token/draft'
 import { toPacked } from '../core/output/packed'
 import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpos'
 import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
+import { renderProxy } from '../core/render/renderProxy'
+import type { TokenDraft } from '../core/token/draft'
+import type { BitImage } from '../core/art/types'
 
 vi.mock('./browserEnv', async (orig) => ({ ...(await orig<object>()), ensureFonts: async () => {} }))
 
@@ -82,6 +85,31 @@ describe('useTokens art', () => {
     await waitFor(() => expect(failing.result.current.artFailed).toBe(true))
     act(() => failing.result.current.edit({ artRef: null }))
     await waitFor(() => expect(failing.result.current.artFailed).toBe(false))
+  })
+  it("does not render the previous token's art while the new ref is still loading", async () => {
+    let releaseB: (b: Blob) => void = () => {}
+    const blob = new Blob([new Uint8Array([1])])
+    const fetchArtById = vi.fn((ref: string) => ref === 'aaaaaaaa000040008000000000000009'
+      ? Promise.resolve(blob)
+      : new Promise<Blob>((res) => { releaseB = res }))
+    const s = fakeServices({ fetchArtById, decodeArt: async () => FAKE_GREY })
+    const { result } = hook(s)
+    const bitsOf = (d: TokenDraft, withArt: boolean) => renderProxy(d.card, withArt ? FAKE_GREY : null, DEFAULT_SETTINGS, s.env).bits
+    const same = (x: BitImage | null, y: BitImage) => !!x && x.width === y.width && x.height === y.height && x.bits.every((v, i) => v === y.bits[i])
+    await waitFor(() => expect(result.current.index).not.toBeNull())
+    act(() => result.current.pickToken('Treasure'))
+    const a = result.current.draft!
+    const aArt = bitsOf(a, true)
+    await waitFor(() => expect(same(result.current.bits, aArt)).toBe(true))
+    act(() => result.current.pickToken('Goblin'))
+    const b = result.current.draft!
+    expect(b.artRef).not.toBe(a.artRef)
+    const bArt = bitsOf(b, true), bBare = bitsOf(b, false)
+    expect(same(bArt, bBare)).toBe(false)
+    await waitFor(() => expect(fetchArtById).toHaveBeenCalledWith(b.artRef))
+    await waitFor(() => expect(same(result.current.bits, bBare)).toBe(true))
+    await act(async () => { releaseB(blob) })
+    await waitFor(() => expect(same(result.current.bits, bArt)).toBe(true))
   })
 })
 
