@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
@@ -12,9 +12,9 @@ import { bitImageToImageData } from '../core/output/packed'
 import { RULE } from './theme'
 
 export interface PreviewPrintProps { state: PrinterState; progress: number; onPrint(): void; onCancel(): void }
-export interface PreviewProps { bits: BitImage; dotsPerLine: number; dpi: number; print?: PreviewPrintProps }
+export interface PreviewProps { bits: BitImage; dotsPerLine: number; dpi: number; print?: PreviewPrintProps; overlay?: ReactNode }
 
-export function Preview({ bits, dotsPerLine, dpi, print }: PreviewProps) {
+export function Preview({ bits, dotsPerLine, dpi, print, overlay }: PreviewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
   const [zoom, setZoom] = useState<'1' | '2' | 'physical'>('1')
   useEffect(() => {
@@ -28,7 +28,10 @@ export function Preview({ bits, dotsPerLine, dpi, print }: PreviewProps) {
   const widthCss = zoom === 'physical' ? `${((dotsPerLine / dpi) * 25.4).toFixed(2)}mm` : `${bits.width * Number(zoom)}px`
   return (
     <Stack spacing={1} sx={{ alignItems: 'center' }} data-testid="preview">
-      <Box component="canvas" ref={ref} sx={{ width: widthCss, maxWidth: '100%', height: 'auto', imageRendering: 'pixelated', border: `1px solid ${RULE}`, background: '#fff', boxShadow: '0 4px 14px rgba(40, 32, 16, 0.15)' }} />
+      <Box sx={{ position: 'relative', width: widthCss, maxWidth: '100%', lineHeight: 0, border: `1px solid ${RULE}`, background: '#fff', boxShadow: '0 4px 14px rgba(40, 32, 16, 0.15)' }}>
+        <Box component="canvas" ref={ref} sx={{ display: 'block', width: '100%', height: 'auto', imageRendering: 'pixelated' }} />
+        {overlay}
+      </Box>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
         <ToggleButtonGroup size="small" exclusive value={zoom} onChange={(_e, v) => v && setZoom(v)}>
           <ToggleButton value="1">1×</ToggleButton><ToggleButton value="2">2×</ToggleButton><ToggleButton value="physical">Print size</ToggleButton>
