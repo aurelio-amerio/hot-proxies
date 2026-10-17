@@ -53,6 +53,7 @@ ISSC `49535343-fe7d-…` (write char `…8841…`), `ff00`/`ff02`, `18f0`/`2af1`
 
 - `public/names.json` is the autocomplete index. Rebuild it from a Scryfall "Oracle Cards" bulk JSONL:
   `npm run build:names -- oracle-cards-YYYYMMDDhhmmss.jsonl`
+- `public/tokens.json` is the Tokens mode index (token sets and emblems, every printing). Rebuild it from Scryfall with `npm run build:tokens`.
 - Card data and art are fetched live from Scryfall and cached in IndexedDB.
 - `src/assets/mana/paths.ts` is generated from `mana-master/svg` by `npm run vendor:mana` (Mana font, SIL OFL 1.1).
 - Fonts: Crimson Text (SIL OFL). Drop `mplantin.ttf` into `src/assets/fonts/local/` (gitignored) to enable the MPlantin option.
