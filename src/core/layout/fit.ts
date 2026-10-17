@@ -36,35 +36,35 @@ export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
   return fitStandard(sheet.face, s, env)
 }
 
-function fitStandard(card: Face, s: Settings, env: RenderEnv): Geometry {
+function fitStandard(face: Face, s: Settings, env: RenderEnv): Geometry {
   const W = s.dotsPerLine, H = cardHeight(W)
   const ctx = env.createCanvas(8, 8).getContext('2d')
   const family = s.fontFamily
   const innerW = W - 2 * MARGIN
 
-  const { nameBar, nameFontSize, costOnSecondLine } = fitNameBar(ctx, card, s.nameSize, family, MARGIN, MARGIN, innerW)
+  const { nameBar, nameFontSize, costOnSecondLine } = fitNameBar(ctx, face, s.nameSize, family, MARGIN, MARGIN, innerW)
 
   // --- stat box width ---
   let statBox: Rect | undefined
-  const statW = card.stat ? statWidth(ctx, card.stat, family) : 0
+  const statW = face.stat ? statWidth(ctx, face.stat, family) : 0
 
   // --- art + text share the rest ---
   const typeBarH = TYPE_H
   // --- type line: shrink until it fits inside the bar's 8-dot side padding ---
-  const typeFontSize = fitTypeFont(ctx, card.typeLine, family, innerW)
+  const typeFontSize = fitTypeFont(ctx, face.typeLine, family, innerW)
   const fixedTop = nameBar.y + nameBar.h + GAP
   const available = H - MARGIN - fixedTop - GAP - typeBarH - GAP   // art + text box
   const textInnerW = innerW - 2 * TEXT_PAD
 
   let chosen: { lines: Line[]; textSize: number; artH: number; stripped: boolean; overflow: boolean } | undefined
   for (const cand of fitCandidates(s.textSize, s.stripReminder)) {
-    const text = cand.stripped ? stripReminder(card.oracleText) : card.oracleText
+    const text = cand.stripped ? stripReminder(face.oracleText) : face.oracleText
     const lh = lineHeightFor(cand.textSize)
     const boxH = available - cand.artH - GAP
     const linesAvail = Math.floor((boxH - 2 * TEXT_PAD) / lh)
     // lines whose bottom would overlap the stat box get narrowed
     const widthForLine = (i: number) => {
-      if (!card.stat) return textInnerW
+      if (!face.stat) return textInnerW
       const bottom = TEXT_PAD + (i + 1) * lh
       return bottom > boxH - STAT_H - 2 ? textInnerW - statW - 4 : textInnerW
     }
@@ -77,7 +77,7 @@ function fitStandard(card: Face, s: Settings, env: RenderEnv): Geometry {
   const art: Rect = { x: MARGIN, y: fixedTop, w: innerW, h: artH }
   const typeBar: Rect = { x: MARGIN, y: art.y + art.h + GAP, w: innerW, h: typeBarH }
   const textBox: Rect = { x: MARGIN, y: typeBar.y + typeBar.h + GAP, w: innerW, h: H - MARGIN - (typeBar.y + typeBar.h + GAP) }
-  if (card.stat) statBox = { x: textBox.x + textBox.w - statW, y: textBox.y + textBox.h - STAT_H, w: statW, h: STAT_H }
+  if (face.stat) statBox = { x: textBox.x + textBox.w - statW, y: textBox.y + textBox.h - STAT_H, w: statW, h: STAT_H }
 
   return {
     kind: 'standard',

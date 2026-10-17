@@ -20,6 +20,12 @@ describe('hotspotsFor', () => {
     expect(spots[4].label).toBe(HOTSPOT_LABELS.stat)
     expect(spots[1].label).toBe('Change art')
   })
+  it('omits the art hotspot when the art was dropped', () => {
+    const g = { ...fit(standardSheet(card('bolt')), DEFAULT_SETTINGS, nodeEnv), art: undefined }
+    const kinds = hotspotsFor(g).map((s) => s.kind)
+    expect(kinds).toHaveLength(4)
+    expect(kinds).not.toContain('art')
+  })
   it('gives a card without a stat box a 96 x 32 stat hotspot in the bottom-right of the text box', () => {
     const g = fit(standardSheet(card('bolt')), DEFAULT_SETTINGS, nodeEnv)
     expect(g.statBox).toBeUndefined()
