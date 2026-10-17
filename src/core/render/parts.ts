@@ -1,10 +1,11 @@
 import type { Face, Stat } from '../card/types'
 import { statLabel } from '../card/types'
 import type { Ctx2D } from '../env'
-import type { Rect } from '../layout/fit'
+import type { Geometry, Rect } from '../layout/fit'
 import type { NameBarFit } from '../layout/bars'
 import type { StampCache } from '../symbols/stamp'
-import { NAME_H, STAT_PAD } from '../layout/constants'
+import { drawLines } from '../text/draw'
+import { NAME_H, STAT_PAD, TEXT_PAD } from '../layout/constants'
 
 export function strokeRect(ctx: Ctx2D, r: Rect, lw: number): void {
   ctx.lineWidth = lw; ctx.strokeStyle = '#000'
@@ -42,4 +43,20 @@ export function drawStatBox(ctx: Ctx2D, box: Rect, stat: Stat, family: string): 
   strokeRect(ctx, box, 2)
   ctx.fillStyle = '#000'; ctx.font = `bold 24px ${family}`
   ctx.fillText(statLabel(stat), box.x + STAT_PAD, box.y + Math.round(box.h * 0.75))
+}
+
+/** A face laid out as a standard card: name bar, art frame (the art is blitted later), type bar, text box and stat box. */
+export function drawFace(ctx: Ctx2D, face: Face, g: Geometry, family: string, stamps: StampCache): void {
+  drawNameBar(ctx, g, face, family, stamps)
+
+  // art frame (art itself is blitted after thresholding)
+  if (g.art) strokeRect(ctx, g.art, 2)
+
+  drawTypeBar(ctx, g.typeBar, g.typeFontSize, face.typeLine, family)
+
+  // text box
+  strokeRect(ctx, g.textBox, 2)
+  drawLines(ctx, g.textLines, g.textBox.x + TEXT_PAD, g.textBox.y + TEXT_PAD, g.lineHeight, `${g.textFontSize}px ${family}`, stamps, g.symbolSize)
+
+  if (g.statBox && face.stat) drawStatBox(ctx, g.statBox, face.stat, family)
 }

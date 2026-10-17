@@ -134,4 +134,18 @@ describe('fit', () => {
     expect(last.lines.length).toBeGreaterThan(0)
     expect(last.textTop + last.lines.length * g.lineHeight).toBeLessThanOrEqual(g.textBox.y + g.textBox.h - 6)
   })
+  it('stacked: Bonecrusher keeps the art and puts Stomp in a sub box above the bottom margin', () => {
+    const g = fit(card('bonecrusher'), S, nodeEnv)
+    expect(g.kind).toBe('stacked'); expect(g.art).toBeDefined(); expect(g.sub!.box.y + g.sub!.box.h).toBe(536 - 8)
+    expect(g.textBox.y + g.textBox.h + GAP).toBe(g.sub!.box.y); expect(g.sub!.typeY).toBeDefined(); expect(g.statBox).toBeDefined()
+  })
+  it('stacked: a flip card gives the flipped face its own stat box', () => { expect(fit(card('bushi'), S, nodeEnv).sub!.statBox).toBeDefined() })
+  it('stacked: a prototype shows its size in the header, no type row', () => {
+    const g = fit(card('fleshgorger'), S, nodeEnv); expect(g.sub!.typeY).toBeUndefined(); expect(g.sub!.headerStat).toBe('3/3'); expect(g.sub!.statBox).toBeUndefined()
+  })
+  it('stacked: long text drops the art before going below 14 px', () => {
+    const c = card('bonecrusher') as Extract<Sheet, { kind: 'stacked' }>
+    const g = fit({ ...c, face: { ...c.face, oracleText: Array(160).fill('word').join(' ') } }, S, nodeEnv)
+    expect(g.art).toBeUndefined(); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN); expect(g.typeBar.y).toBe(g.nameBar.y + g.nameBar.h + GAP)
+  })
 })

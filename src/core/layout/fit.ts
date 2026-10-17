@@ -2,13 +2,14 @@ import type { Face, Sheet } from '../card/types'
 import type { Settings } from '../settings'
 import type { RenderEnv } from '../env'
 import { cardHeight } from '../printer'
-import { tokenize } from '../text/tokenize'
-import { wrapText, type Line } from '../text/wrap'
+import type { Line } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { fitCandidates } from './candidates'
 import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor } from './bars'
 import { fitColumns } from './fitColumns'
-import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL } from './constants'
+import { fitStacked } from './fitStacked'
+import { faceBoxes, wrapBoxText, type FaceBoxes } from './face'
+import { MARGIN, GAP, COST_SYMBOL } from './constants'
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface SectionGeometry { rule?: number; header?: { label: string; y: number; costCodes: string[]; statLabel?: string }; badges: { code: string; rect: Rect }[]; textX: number; textTop: number; lines: Line[] }
@@ -31,6 +32,7 @@ export interface Geometry {
 
 export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
   if (sheet.kind === 'columns') return fitColumns(sheet, s, env)
+  if (sheet.kind === 'stacked') return fitStacked(sheet, s, env)
   if (sheet.kind !== 'standard') throw new Error('not implemented')
   return fitStandard(sheet.face, s, env)
 }
@@ -42,41 +44,22 @@ function fitStandard(face: Face, s: Settings, env: RenderEnv): Geometry {
   const innerW = W - 2 * MARGIN
 
   const { nameBar, nameFontSize, costOnSecondLine } = fitNameBar(ctx, face, s.nameSize, family, MARGIN, MARGIN, innerW)
-
-  // --- stat box width ---
-  let statBox: Rect | undefined
   const statW = face.stat ? statWidth(ctx, face.stat, family) : 0
-
-  // --- art + text share the rest ---
-  const typeBarH = TYPE_H
   // --- type line: shrink until it fits inside the bar's 8-dot side padding ---
   const typeFontSize = fitTypeFont(ctx, face.typeLine, family, innerW)
   const fixedTop = nameBar.y + nameBar.h + GAP
-  const available = H - MARGIN - fixedTop - GAP - typeBarH - GAP   // art + text box
-  const textInnerW = innerW - 2 * TEXT_PAD
 
-  let chosen: { lines: Line[]; textSize: number; artH: number; stripped: boolean; overflow: boolean } | undefined
+  // --- art + text share the rest ---
+  let chosen: { boxes: FaceBoxes; lines: Line[]; textSize: number; artH: number; stripped: boolean; overflow: boolean } | undefined
   for (const cand of fitCandidates(s.textSize, s.stripReminder)) {
     const text = cand.stripped ? stripReminder(face.oracleText) : face.oracleText
-    const lh = lineHeightFor(cand.textSize)
-    const boxH = available - cand.artH - GAP
-    const linesAvail = Math.floor((boxH - 2 * TEXT_PAD) / lh)
-    // lines whose bottom would overlap the stat box get narrowed
-    const widthForLine = (i: number) => {
-      if (!face.stat) return textInnerW
-      const bottom = TEXT_PAD + (i + 1) * lh
-      return bottom > boxH - STAT_H - 2 ? textInnerW - statW - 4 : textInnerW
-    }
-    const lines = wrapText(tokenize(text), { ctx, font: `${cand.textSize}px ${family}`, symbolSize: symbolSizeFor(cand.textSize), widthForLine })
-    if (lines.length <= linesAvail) { chosen = { lines, ...cand, overflow: false }; break }
-    chosen = { lines: lines.slice(0, Math.max(1, linesAvail)), ...cand, overflow: true }
+    const boxes = faceBoxes(MARGIN, fixedTop, innerW, cand.artH, H - MARGIN, statW)
+    const { lines, linesAvail } = wrapBoxText(ctx, text, cand.textSize, family, boxes.textBox, statW)
+    if (lines.length <= linesAvail) { chosen = { boxes, lines, ...cand, overflow: false }; break }
+    chosen = { boxes, lines: lines.slice(0, Math.max(1, linesAvail)), ...cand, overflow: true }
   }
   const c = chosen!
-  const artH = c.artH
-  const art: Rect = { x: MARGIN, y: fixedTop, w: innerW, h: artH }
-  const typeBar: Rect = { x: MARGIN, y: art.y + art.h + GAP, w: innerW, h: typeBarH }
-  const textBox: Rect = { x: MARGIN, y: typeBar.y + typeBar.h + GAP, w: innerW, h: H - MARGIN - (typeBar.y + typeBar.h + GAP) }
-  if (face.stat) statBox = { x: textBox.x + textBox.w - statW, y: textBox.y + textBox.h - STAT_H, w: statW, h: STAT_H }
+  const { art, typeBar, textBox, statBox } = c.boxes
 
   return {
     kind: 'standard',

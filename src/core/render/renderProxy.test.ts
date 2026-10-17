@@ -70,6 +70,16 @@ describe('renderProxy', () => {
       await expectGolden(golden, bits)
     })
   }
+  for (const [golden, fixture, artName] of [
+    ['adventure-bonecrusher', 'bonecrusher', 'rotpriest'], ['flip-bushi', 'bushi', 'bolt'], ['prototype-fleshgorger', 'fleshgorger', null],
+  ] as const) {
+    it(`renders ${golden} (stacked sheet) identically to the golden image`, async () => {
+      const art = artName ? await loadArt(`tests/fixtures/art/${artName}.jpg`) : null
+      const { bits, geometry } = renderProxy(card(fixture), art, DEFAULT_SETTINGS, nodeEnv)
+      expect(geometry.kind).toBe('stacked'); expect(geometry.overflow).toBe(false)
+      await expectGolden(golden, bits)
+    })
+  }
   it('renders the front of a transforming saga (The Kami War) identically to the golden image', async () => {
     const { bits, geometry } = renderProxy(card('kami-war'), null, DEFAULT_SETTINGS, nodeEnv)
     expect(geometry.kind).toBe('columns'); expect(geometry.overflow).toBe(false)
