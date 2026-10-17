@@ -29,9 +29,12 @@ export function useProxy(services: Services, settings: Settings) {
   const [prints, setPrints] = useState<Printing[] | null>(null)
   const [printsError, setPrintsError] = useState<string | null>(null)
   const seq = useRef(0)
+  /** Art loads have their own sequence: a newer pick or render drops an older load's result. */
+  const artSeq = useRef(0)
 
   const render = useCallback(async (name: string) => {
     const my = ++seq.current
+    ++artSeq.current
     setState('loading'); setErrors([]); setPrints(null); setPrintsError(null)
     try {
       const c = normalizeScryfall(await services.client.fetchCard(name))
@@ -50,9 +53,9 @@ export function useProxy(services: Services, settings: Settings) {
     if (!card) return
     setPreferredArt(services.storage, card.name, ref)
     setArtRef(ref)
-    const my = seq.current
+    const my = ++artSeq.current
     const r = await resolveArt(services, card)
-    if (my !== seq.current) return
+    if (my !== artSeq.current) return
     setArt(r.art); setArtFailed(r.failed)
   }, [services, card])
 
