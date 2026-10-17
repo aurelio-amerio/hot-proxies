@@ -9,6 +9,7 @@ import { createMatcher, type Matcher } from '../data/fuzzy'
 import type { BitImage } from '../core/art/types'
 import { renderProxy } from '../core/render/renderProxy'
 import { ensureFonts } from './browserEnv'
+import { fontFallbackMessage } from './fontFallback'
 import { toPacked } from '../core/output/packed'
 import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpos'
 import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
@@ -77,7 +78,7 @@ export function useDeck(services: Services, settings: Settings) {
     }
     ensureFonts(settings.fontFamily).then(
       () => draw(null),
-      () => draw(new Error(`Font ${settings.fontFamily} could not be loaded; rendering with a fallback font.`)),
+      () => draw(new Error(fontFallbackMessage(settings.fontFamily))),
     )
     return () => { on = false }
   }, [cards, settings, services.env])

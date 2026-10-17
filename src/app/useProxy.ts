@@ -10,6 +10,7 @@ import { renderProxy } from '../core/render/renderProxy'
 import { ArtUnavailable } from '../core/errors'
 import { getPreferredArt, setPreferredArt } from '../core/art/preference'
 import { ensureFonts } from './browserEnv'
+import { fontFallbackMessage } from './fontFallback'
 import { resolveArt } from './resolveArt'
 
 export type ProxyState = 'idle' | 'loading' | 'rendered' | 'error'
@@ -75,7 +76,7 @@ export function useProxy(services: Services, settings: Settings) {
     // A missing font (e.g. MPlantin without the local file) must not stall rendering: fall back and warn.
     ensureFonts(settings.fontFamily).then(
       () => draw(null),
-      () => draw(new Error(`Font ${settings.fontFamily} could not be loaded; rendering with a fallback font.`)),
+      () => draw(new Error(fontFallbackMessage(settings.fontFamily))),
     )
     return () => { on = false }
   }, [card, art, settings, services.env])
