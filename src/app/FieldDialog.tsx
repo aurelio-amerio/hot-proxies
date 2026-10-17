@@ -29,7 +29,7 @@ export function FieldDialog({ field, card, onSave, onClose }: FieldDialogProps) 
 function FieldForm({ field, card, onSave, onClose }: { field: FieldKind; card: CardData; onSave(p: DraftPatch): void; onClose(): void }) {
   const initialText = field === 'name' ? card.name : field === 'type' ? card.typeLine : field === 'rules' ? card.oracleText : ''
   const [text, setText] = useState(initialText)
-  const [statKind, setStatKind] = useState<StatKind>(card.stat?.kind ?? 'none')
+  const [statKind, setStatKind] = useState<StatKind>(card.stat?.kind === 'pt' || card.stat?.kind === 'loyalty' ? card.stat.kind : 'none')  // tokens have no defense
   const [power, setPower] = useState(card.stat?.kind === 'pt' ? card.stat.power : '')
   const [toughness, setToughness] = useState(card.stat?.kind === 'pt' ? card.stat.toughness : '')
   const [loyalty, setLoyalty] = useState(card.stat?.kind === 'loyalty' ? card.stat.value : '')
