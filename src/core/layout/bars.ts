@@ -2,7 +2,10 @@ import type { Face, Stat } from '../card/types'
 import { statLabel } from '../card/types'
 import type { Ctx2D } from '../env'
 import type { Rect } from './fit'
-import { NAME_H, COST_SYMBOL, NAME_MIN, TYPE_SIZE, TYPE_MIN, STAT_PAD } from './constants'
+import { NAME_H, COST_SYMBOL, NAME_MIN, TYPE_SIZE, TYPE_MIN, STAT_PAD, LINE_HEIGHT_RATIO } from './constants'
+
+export const lineHeightFor = (fontSize: number) => Math.round(fontSize * LINE_HEIGHT_RATIO)
+export const symbolSizeFor = (fontSize: number) => Math.round(fontSize * 0.95)
 
 export interface NameBarFit { nameBar: Rect; nameFontSize: number; costOnSecondLine: boolean }
 

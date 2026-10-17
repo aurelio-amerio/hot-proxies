@@ -7,8 +7,8 @@ import { tokenize } from '../text/tokenize'
 import { wrapText } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { columnCandidates } from './candidates'
-import { fitNameBar, fitTypeFont, statWidth } from './bars'
-import { lineHeightFor, symbolSizeFor, type Geometry, type Rect, type SectionGeometry } from './fit'
+import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor } from './bars'
+import type { Geometry, Rect, SectionGeometry } from './fit'
 import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL, BADGE, BADGE_GUTTER, SECTION_GAP } from './constants'
 
 type ColumnsSheet = Extract<Sheet, { kind: 'columns' }>

@@ -6,9 +6,9 @@ import { tokenize } from '../text/tokenize'
 import { wrapText, type Line } from '../text/wrap'
 import { stripReminder } from './reminder'
 import { fitCandidates } from './candidates'
-import { fitNameBar, fitTypeFont, statWidth } from './bars'
+import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor } from './bars'
 import { fitColumns } from './fitColumns'
-import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL, LINE_HEIGHT_RATIO } from './constants'
+import { MARGIN, GAP, TYPE_H, TEXT_PAD, STAT_H, COST_SYMBOL } from './constants'
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface SectionGeometry { rule?: number; header?: { label: string; y: number; costCodes: string[]; statLabel?: string }; badges: { code: string; rect: Rect }[]; textX: number; textTop: number; lines: Line[] }
@@ -28,9 +28,6 @@ export interface Geometry {
   second?: HalfGeometry                              // split
   overflow: boolean; strippedReminder: boolean
 }
-
-export const lineHeightFor = (fontSize: number) => Math.round(fontSize * LINE_HEIGHT_RATIO)
-export const symbolSizeFor = (fontSize: number) => Math.round(fontSize * 0.95)
 
 export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
   if (sheet.kind === 'columns') return fitColumns(sheet, s, env)
