@@ -22,7 +22,7 @@ export async function buildNameIndex(inputPath: string, outputPath: string): Pro
   return sorted.length
 }
 
-const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*\//, ''))
+const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/^.*[\\/]/, ''))
 if (isMain) {
   const input = process.argv[2]
   if (!input) { console.error('usage: tsx scripts/build-name-index.ts <oracle-cards.jsonl>'); process.exit(1) }

@@ -1,7 +1,7 @@
 # Card layouts: sagas, classes and multi-face cards
 
 Date: 2026-10-17
-Status: approved design
+Status: implemented. Settled differently: leveler stat box narrows its lines; first saga badge centred on the first text line; art preference keyed on the full card name.
 
 Builds on `2026-10-12-hot-proxies-design.md` (pipeline, fit, settings),
 `2026-10-15-deck-printing-design.md` (print run loop, verify) and
