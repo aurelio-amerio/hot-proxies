@@ -22,6 +22,9 @@ describe('parseDeckList', () => {
     const p = parseDeckList('// my deck\n\n# lands\n4 Mountain')
     expect(p.entries).toEqual([{ line: 4, count: 4, name: 'Mountain' }])
   })
+  it('treats // as a comment only at the start of a line, so split and two-faced names survive', () => {
+    expect(names('1 Fire // Ice\nDelver of Secrets // Insectile Aberration')).toEqual(['1 Fire // Ice', '1 Delver of Secrets // Insectile Aberration'])
+  })
   it('skips every header spelling and prints Commander cards', () => {
     const text = 'Deck\n1 A\nMainboard:\n1 B\nMain\n1 C\nCommander\n1 D\nCommanders:\n1 E\nCompanion\n1 F'
     expect(names(text)).toEqual(['1 A', '1 B', '1 C', '1 D', '1 E', '1 F'])

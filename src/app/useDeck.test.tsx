@@ -7,8 +7,13 @@ import { NetworkError } from '../core/errors'
 import { fakeServices, memoryStorage, FAKE_GREY } from '../../tests/fakeServices'
 import { setPreferredArt } from '../core/art/preference'
 import { fakePrinter } from '../../tests/fakePrinter'
-import { encodeEscPosFrames } from '../core/output/escpos'
+import { encodeEscPosFrames, escposInit, escposRasterFrames } from '../core/output/escpos'
 import { toPacked } from '../core/output/packed'
+import { foldGuide } from '../core/output/foldGuide'
+import { sheetFrames } from '../core/printer/sheets'
+import { BLE_CHUNK_BYTES, FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
+import type { BitImage } from '../core/art/types'
+import { progress } from '../core/deck/run'
 
 vi.mock('./browserEnv', async (orig) => ({ ...(await orig<object>()), ensureFonts: async () => {} }))
 
@@ -158,7 +163,7 @@ describe('useDeck thumbnails', () => {
     const { result } = await verified('2 Lightning Bolt\n1 Forest')
     expect([...result.current.thumbs.keys()]).toEqual(['lightning bolt', 'forest'])
     const t = result.current.thumbs.get('lightning bolt')!
-    expect(t.bits.width).toBe(384); expect(t.bits.height).toBe(536)
+    expect(t.bits.length).toBe(1); expect(t.bits[0].width).toBe(384); expect(t.bits[0].height).toBe(536)
     expect(t.artMissing).toBe(true)    // bolt has art_crop but the fake art fetch fails
     expect(result.current.thumbs.get('forest')!.artMissing).toBe(true)
   })
@@ -184,7 +189,7 @@ describe('useDeck print', () => {
     await act(() => result.current.print())
     expect(result.current.state).toBe('done')
     expect(countResets(printer)).toBe(1)
-    const single = encodeEscPosFrames(toPacked(result.current.thumbs.get('forest')!.bits), 384, 536).reduce((a, f) => a + f.length, 0)
+    const single = encodeEscPosFrames(toPacked(result.current.thumbs.get('forest')!.bits[0]), 384, 536).reduce((a, f) => a + f.length, 0)
     // 3 cards: one init (5) + 3 × (raster 25800 + feed 3)
     expect(totalBytes(printer)).toBe(5 + 3 * (single - 5))
     const feeds = printer.writes.filter((w) => w.length === 3 && w[0] === 0x1b && w[1] === 0x64).map((w) => w[2])
@@ -321,7 +326,79 @@ describe('useDeck art preference', () => {
     await waitFor(() => expect(result.current.state).toBe('ready'))
     expect(fetchArtById).toHaveBeenCalledTimes(1)
     expect(fetchArtById).toHaveBeenCalledWith('ref1')
-    expect(result.current.run!.cards.find((c) => c.name === 'Lightning Bolt')!.art).toBe(FAKE_GREY)
-    expect(result.current.run!.cards.find((c) => c.name === 'Forest')!.art).toBeNull()
+    expect(result.current.run!.cards.find((c) => c.name === 'Lightning Bolt')!.arts).toEqual([FAKE_GREY])
+    expect(result.current.run!.cards.find((c) => c.name === 'Forest')!.arts).toEqual([null])
+  })
+})
+
+const MIXED = '1 Bonecrusher Giant\n1 Fire // Ice\n1 Delver of Secrets'
+const DELVER = 'delver of secrets'
+const concat = (parts: Uint8Array[]) => {
+  const out = new Uint8Array(parts.reduce((a, p) => a + p.length, 0)); let o = 0
+  for (const p of parts) { out.set(p, o); o += p.length }
+  return out
+}
+const occurrences = (hay: Uint8Array, needle: Uint8Array) => {
+  let n = 0
+  outer: for (let i = 0; i + needle.length <= hay.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (hay[i + j] !== needle[j]) continue outer
+    n++
+  }
+  return n
+}
+const GUIDE = toPacked(foldGuide(384))
+/** BLE writes printJob makes for these frames: each frame is chunked on its own. */
+const chunkCount = (frames: Uint8Array[]) => frames.reduce((a, f) => a + Math.ceil(f.length / BLE_CHUNK_BYTES), 0)
+const rasterOf = (b: BitImage) => escposRasterFrames(toPacked(b), b.width, b.height)
+
+describe('useDeck layouts', () => {
+  it('verifies adventure, split and transform cards as one item each; the transform card has two sheets', async () => {
+    const { result } = await verified(MIXED)
+    expect(result.current.run!.cards.length).toBe(3)
+    expect(result.current.run!.items.length).toBe(3)
+    expect(result.current.issues).toBeNull()
+    expect(result.current.thumbs.get(DELVER)!.bits.length).toBe(2)
+    expect(result.current.thumbs.get('bonecrusher giant')!.bits.length).toBe(1)
+    expect(result.current.thumbs.get('fire // ice')!.bits.length).toBe(1)
+  })
+  it('prints a fold pair inside one job: one ESC @ and the fold guide once', async () => {
+    const printer = fakePrinter('connected')
+    const { result } = await verified(MIXED, fakeServices({ printer }))
+    await act(() => result.current.print())
+    expect(result.current.state).toBe('done')
+    expect(countResets(printer)).toBe(1)
+    expect(occurrences(concat(printer.writes), GUIDE)).toBe(1)
+    const t = result.current.thumbs
+    const expected = [escposInit(), ...sheetFrames(t.get('bonecrusher giant')!.bits, FEED_LINES_BETWEEN_CARDS),
+      ...sheetFrames(t.get('fire // ice')!.bits, FEED_LINES_BETWEEN_CARDS), ...sheetFrames(t.get(DELVER)!.bits, FEED_LINES_AFTER)]
+    expect(concat(printer.writes)).toEqual(concat(expected))
+  })
+  it('a drop between the sheets of a fold pair leaves the item pending, and resume sends both sheets with a fresh ESC @', async () => {
+    const printer = fakePrinter('connected')
+    const { result } = await verified(MIXED, fakeServices({ printer }))
+    const t = result.current.thumbs
+    const beforeDelver = 1 + chunkCount(sheetFrames(t.get('bonecrusher giant')!.bits, FEED_LINES_BETWEEN_CARDS))
+      + chunkCount(sheetFrames(t.get('fire // ice')!.bits, FEED_LINES_BETWEEN_CARDS))
+    const delverFront = chunkCount(rasterOf(t.get(DELVER)!.bits[0]))
+    const delverAll = chunkCount(sheetFrames(t.get(DELVER)!.bits, FEED_LINES_AFTER))
+    const dropAt = beforeDelver + delverFront + 1   // the first fold-guide chunk
+    expect(dropAt).toBeGreaterThan(beforeDelver + delverFront)
+    expect(dropAt).toBeLessThanOrEqual(beforeDelver + delverAll)
+    const origWrite = printer.write.bind(printer)
+    let n = 0
+    printer.write = async (b) => { if (++n === dropAt) { printer.set('disconnected'); throw new Error('gatt gone') } await origWrite(b) }
+    await act(() => result.current.print())
+    expect(printer.writes.length).toBe(dropAt - 1)   // the Delver front went out, then the link dropped
+    expect(result.current.state).toBe('paused')
+    expect(result.current.run!.items.map((i) => i.status)).toEqual(['printed', 'printed', 'pending'])
+    expect(progress(result.current.run!).printed).toBe(2)   // the two cards before the pair; the pair is not counted
+    printer.write = origWrite; printer.set('connected')
+    const resumeFrom = printer.writes.length
+    await act(() => result.current.print())
+    expect(result.current.state).toBe('done')
+    const resumed = printer.writes.slice(resumeFrom)
+    expect(resumed[0]).toEqual(escposInit())
+    expect(occurrences(concat(resumed), GUIDE)).toBe(1)
+    expect(concat(resumed)).toEqual(concat([escposInit(), ...sheetFrames(t.get(DELVER)!.bits, FEED_LINES_AFTER)]))
   })
 })

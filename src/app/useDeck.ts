@@ -1,24 +1,25 @@
-import { sheetFaces, standardSheet } from '../core/card/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Services } from './services'
 import type { Settings } from '../core/settings'
 import { parseDeckList, distinctCards, rewriteCardName, lineText, type ParsedDeck, type DistinctEntry } from '../core/deck/parse'
 import { createRun, toggleCard as toggleRun, nextPending, markPrinted, progress, reset, type DeckCard, type DeckRun, type PrintItem } from '../core/deck/run'
-import { normalizeScryfall } from '../core/card/normalize'
 import { CardNotFound, NetworkError, UnsupportedLayout } from '../core/errors'
 import { createMatcher, type Matcher } from '../data/fuzzy'
 import type { BitImage } from '../core/art/types'
 import { renderProxy } from '../core/render/renderProxy'
 import { ensureFonts } from './browserEnv'
 import { fontFallbackMessage } from './fontFallback'
-import { toPacked } from '../core/output/packed'
-import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpos'
+import { sheetFaces } from '../core/card/types'
+import { escposInit } from '../core/output/escpos'
+import { sheetFrames } from '../core/printer/sheets'
 import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
 import { printJob, type PrinterState } from '../core/printer/transport'
 import { PRINTER_MESSAGES } from './usePrinter'
 import { resolveArt } from './resolveArt'
+import { loadCard } from './loadCard'
 
-export interface DeckThumb { bits: BitImage; overflow: boolean; artMissing: boolean }
+/** One render per sheet (a fold pair has two), from the bits that print. */
+export interface DeckThumb { bits: BitImage[]; overflow: boolean; artMissing: boolean; meldFailed: boolean }
 
 export type DeckState = 'editing' | 'verifying' | 'ready' | 'printing' | 'paused' | 'done'
 export type DeckIssue =
@@ -45,7 +46,8 @@ export function useDeck(services: Services, settings: Settings) {
   const [fontWarning, setFontWarning] = useState<string | null>(null)
   const [current, setCurrent] = useState<{ item: PrintItem; fraction: number } | null>(null)
   const thumbsRef = useRef<Map<string, DeckThumb>>(new Map())
-  const packedRef = useRef<Map<string, Uint8Array>>(new Map())
+  /** Print frames per card key and trailing feed, built once per render. */
+  const framesRef = useRef<Map<string, Uint8Array[]>>(new Map())
   const abort = useRef<AbortController | null>(null)
   /** ESC @ is due: a new run, Start over, or the connection dropped (the printer may have power-cycled). Never after raster data on the same connection: it clears the print buffer. */
   const needsInit = useRef(true)
@@ -58,7 +60,7 @@ export function useDeck(services: Services, settings: Settings) {
 
   useEffect(() => services.printer.onStateChange((s) => { if (s === 'disconnected') needsInit.current = true }), [services.printer])
 
-  // Render one BitImage per distinct card whenever the cards or settings change. Statuses are untouched.
+  // Render every sheet of every distinct card whenever the cards or settings change. Statuses are untouched.
   const cards = run?.cards ?? null
   useEffect(() => {
     if (!cards) return
@@ -69,12 +71,17 @@ export function useDeck(services: Services, settings: Settings) {
       for (let i = 0; i < cards.length; i++) {
         if (!on) return
         const c = cards[i]
-        const r = renderProxy(standardSheet(c.card), c.art, settings, services.env)
-        next.set(c.key, { bits: r.bits, overflow: r.geometry.overflow, artMissing: !!c.card.artUrl && !c.art })
+        const renders = c.card.sheets.map((sheet, s) => renderProxy(sheet, c.arts[s] ?? null, settings, services.env))
+        next.set(c.key, {
+          bits: renders.map((r) => r.bits),
+          overflow: renders.some((r) => r.geometry.overflow),
+          artMissing: c.card.sheets.some((sheet, s) => !!sheetFaces(sheet)[0].artUrl && !c.arts[s]),
+          meldFailed: c.meldFailed,
+        })
         if (i % 4 === 3) await new Promise<void>((res) => setTimeout(res, 0))   // keep the UI responsive
       }
       if (!on) return
-      thumbsRef.current = next; packedRef.current = new Map()
+      thumbsRef.current = next; framesRef.current = new Map()
       setThumbs(next); setFontWarning(fontError ? fontError.message : null); setRendering(false)
     }
     ensureFonts(settings.fontFamily).then(
@@ -95,7 +102,7 @@ export function useDeck(services: Services, settings: Settings) {
     if (stateRef.current === 'verifying' || stateRef.current === 'printing') return
     seq.current++
     commitText(v); setRun(null); setIssues(null); setVerifyProgress(null)
-    setThumbs(new Map()); thumbsRef.current = new Map(); packedRef.current = new Map()
+    setThumbs(new Map()); thumbsRef.current = new Map(); framesRef.current = new Map()
     go('editing')
   }, [commitText, setRun, go])
 
@@ -104,7 +111,7 @@ export function useDeck(services: Services, settings: Settings) {
     const my = ++seq.current
     const snapshotText = text
     go('verifying'); setError(null); setIssues(null); setRun(null)
-    setThumbs(new Map()); thumbsRef.current = new Map(); packedRef.current = new Map()
+    setThumbs(new Map()); thumbsRef.current = new Map(); framesRef.current = new Map()
     setVerifyProgress({ done: 0, total: distinct.length })
     const found: DeckIssue[] = parsed.issues.map((i) => ({ ...i }))
     const cards: DeckCard[] = []
@@ -117,9 +124,9 @@ export function useDeck(services: Services, settings: Settings) {
       for (let i = 0; i < distinct.length; i++) {
         const d = distinct[i]
         try {
-          const card = sheetFaces(normalizeScryfall(await services.client.fetchCard(d.name)).sheets[0])[0]
-          const [{ art }] = await resolveArt(services, { name: card.name, sheets: [standardSheet(card)] })
-          cards.push({ key: d.key, name: card.name, count: d.count, line: d.line, card, art })
+          const { card, meldFailed } = await loadCard(services, d.name)
+          const arts = (await resolveArt(services, card)).map((a) => a.art)
+          cards.push({ key: d.key, name: card.name, count: d.count, line: d.line, card, arts, meldFailed })
         } catch (e) {
           const text = lineText(snapshotText, d.line)
           if (e instanceof CardNotFound) found.push({ kind: 'not-found', line: d.line, text, name: d.name, suggestion: await suggest(d.name) })
@@ -172,13 +179,17 @@ export function useDeck(services: Services, settings: Settings) {
     setRun(reset(runRef.current)); needsInit.current = true; setError(null); go('ready')
   }, [setRun, go])
 
-  const packedFor = (key: string): Uint8Array => {
-    let p = packedRef.current.get(key)
-    if (!p) { p = toPacked(thumbsRef.current.get(key)!.bits); packedRef.current.set(key, p) }
-    return p
+  const framesFor = (key: string, gapAfter: number): Uint8Array[] => {
+    const k = `${gapAfter}:${key}`
+    let f = framesRef.current.get(k)
+    if (!f) { f = sheetFrames(thumbsRef.current.get(key)!.bits, gapAfter); framesRef.current.set(k, f) }
+    return f
   }
 
-  /** Print every pending item, in order. A run starts with ESC @; a resume repeats it only after a dropped connection. */
+  /**
+   * Print every pending item, in order; a fold pair (front, guide, rotated back) is one item and one job,
+   * marked printed only when the whole job is sent. A run starts with ESC @; a resume repeats it only after a dropped connection.
+   */
   const print = useCallback(async () => {
     const printer = services.printer
     const s = stateRef.current
@@ -191,14 +202,9 @@ export function useDeck(services: Services, settings: Settings) {
         const run = runRef.current!
         const item = nextPending(run)
         if (!item) break
-        const bits = thumbsRef.current.get(item.cardKey)!.bits
         const last = progress(run).remaining === 1
         const init = needsInit.current ? escposInit() : null
-        const frames = [
-          ...(init ? [init] : []),
-          ...escposRasterFrames(packedFor(item.cardKey), bits.width, bits.height),
-          escposFeed(last ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS),
-        ]
+        const frames = [...(init ? [init] : []), ...framesFor(item.cardKey, last ? FEED_LINES_AFTER : FEED_LINES_BETWEEN_CARDS)]
         setCurrent({ item, fraction: 0 })
         await printJob(printer, frames, { signal: ac.signal, onProgress: (sent, total) => {
           if (init && sent >= init.length) needsInit.current = false

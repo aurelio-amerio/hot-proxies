@@ -1,7 +1,8 @@
-import type { CardData } from '../card/types'
+import type { ProxyCard } from '../card/types'
 import type { GreyImage } from '../art/types'
 
-export interface DeckCard { key: string; name: string; count: number; line: number; card: CardData; art: GreyImage | null }
+/** One distinct card of a verified list: its sheets' art (one entry per sheet) and whether a meld part's back could not be fetched. */
+export interface DeckCard { key: string; name: string; count: number; line: number; card: ProxyCard; arts: (GreyImage | null)[]; meldFailed: boolean }
 export type ItemStatus = 'pending' | 'printed' | 'skipped'
 export interface PrintItem { cardKey: string; copy: number; status: ItemStatus }
 /** Immutable print queue: one item per copy, in list order. Every function returns a new run. */

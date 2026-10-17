@@ -97,7 +97,11 @@ export function DeckPanel({ deck, printerState, settings }: DeckPanelProps) {
       <Dialog open={!!openCard} onClose={() => setOpen(null)} aria-labelledby="deck-preview-title" maxWidth="md">
         <DialogTitle id="deck-preview-title">{openCard?.name ?? ''}</DialogTitle>
         <DialogContent>
-          {openThumb && <Preview bits={openThumb.bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi} />}
+          {openThumb && (
+            <Stack spacing={2}>
+              {openThumb.bits.map((bits, i) => <Preview key={i} bits={bits} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi} />)}
+            </Stack>
+          )}
         </DialogContent>
       </Dialog>
     </Stack>

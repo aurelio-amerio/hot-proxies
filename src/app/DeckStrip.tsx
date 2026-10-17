@@ -39,11 +39,11 @@ function Thumb({ bits }: { bits: BitImage }) {
 }
 
 function warningText(t: DeckThumb): string | null {
-  const parts = [t.overflow ? 'Rules text clipped' : null, t.artMissing ? 'art missing' : null].filter((p): p is string => !!p)
+  const parts = [t.overflow ? 'Rules text clipped' : null, t.artMissing ? 'art missing' : null, t.meldFailed ? 'melded side missing' : null].filter((p): p is string => !!p)
   return parts.length ? parts.join('; ') : null
 }
 
-/** One thumbnail per distinct card, drawn from the bits that will print. */
+/** One thumbnail per distinct card, drawn from the bits that will print (the front sheet of a fold pair). */
 export function DeckStrip({ cards, thumbs, excluded, currentKey, disabled, onToggle, onOpen }: DeckStripProps) {
   return (
     <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 1, px: 0.5 }} data-testid="deck-strip">
@@ -57,9 +57,10 @@ export function DeckStrip({ cards, thumbs, excluded, currentKey, disabled, onTog
             sx={{ flex: '0 0 auto', width: THUMB_W, opacity: off ? 0.4 : 1, alignItems: 'center' }}>
             <Box sx={{ position: 'relative', border: `${current ? 2 : 1}px solid ${current ? INK : RULE}`, borderRadius: 1, overflow: 'hidden', width: THUMB_W }}>
               <ButtonBase aria-label={`Preview ${c.name}`} onClick={() => onOpen(c.key)} sx={{ display: 'block' }}>
-                {t ? <Thumb bits={t.bits} /> : <Box sx={{ width: THUMB_W, height: Math.round((THUMB_W * 88) / 63), bgcolor: 'action.hover' }} />}
+                {t ? <Thumb bits={t.bits[0]} /> : <Box sx={{ width: THUMB_W, height: Math.round((THUMB_W * 88) / 63), bgcolor: 'action.hover' }} />}
               </ButtonBase>
               <Chip label={`×${c.count}`} size="small" sx={{ position: 'absolute', top: 4, right: 4, bgcolor: INK, color: '#fff', height: 20 }} />
+              {t?.bits.length === 2 && <Chip label="2 sheets" size="small" sx={{ position: 'absolute', bottom: 4, left: 4, bgcolor: INK, color: '#fff', height: 20 }} />}
               {warn && (
                 <Tooltip title={warn}>
                   <WarningAmberIcon aria-label={warn} color="warning" fontSize="small" sx={{ position: 'absolute', bottom: 4, right: 4, bgcolor: '#fff', borderRadius: '50%' }} />

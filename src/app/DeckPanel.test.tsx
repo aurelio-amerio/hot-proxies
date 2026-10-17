@@ -136,4 +136,10 @@ describe('DeckPanel selection and printing', () => {
     expect(screen.getByTestId('preview')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Print' })).toBeNull()
   })
+  it('previews every sheet of a two-sheet card', async () => {
+    await ready(fakeServices(), 'connected', '1 Delver of Secrets')
+    await userEvent.click(screen.getByRole('button', { name: 'Preview Delver of Secrets // Insectile Aberration' }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+    expect(screen.getAllByTestId('preview')).toHaveLength(2)
+  })
 })

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { createRun, toggleCard, nextPending, markPrinted, progress, reset, type DeckCard } from './run'
 
 const card = (key: string, count: number): DeckCard => ({
-  key, name: key, count, line: 1, art: null,
-  card: { name: key, manaCost: '', typeLine: '', oracleText: '' },
+  key, name: key, count, line: 1, arts: [null], meldFailed: false,
+  card: { name: key, sheets: [{ kind: 'standard', face: { name: key, manaCost: '', typeLine: '', oracleText: '' } }] },
 })
 const statuses = (r: ReturnType<typeof createRun>) => r.items.map((i) => `${i.cardKey}${i.copy}:${i.status}`)
 
