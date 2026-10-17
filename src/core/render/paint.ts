@@ -8,10 +8,11 @@ import { canvasToBitImage } from '../output/packed'
 import { drawFace, strokeRect } from './parts'
 import { paintColumns } from './paintColumns'
 import { paintStacked } from './paintStacked'
+import { paintSplit } from './paintSplit'
 import { FRAME } from '../layout/constants'
 
 /** Paint the card (text, bars, symbols) in greyscale, threshold it, then blit the dithered art bits. */
-export function paint(sheet: Extract<Sheet, { kind: 'standard' | 'columns' | 'stacked' }>, g: Geometry, artBits: BitImage | null, s: Settings, env: RenderEnv, stamps: StampCache): BitImage {
+export function paint(sheet: Sheet, g: Geometry, artBits: BitImage | null, s: Settings, env: RenderEnv, stamps: StampCache): BitImage {
   const canvas = env.createCanvas(g.card.w, g.card.h)
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, g.card.w, g.card.h)
@@ -19,6 +20,7 @@ export function paint(sheet: Extract<Sheet, { kind: 'standard' | 'columns' | 'st
 
   if (sheet.kind === 'columns') paintColumns(ctx, sheet, g, s, stamps)
   else if (sheet.kind === 'stacked') paintStacked(ctx, sheet, g, s, stamps)
+  else if (sheet.kind === 'split') paintSplit(ctx, sheet, g, s, stamps)
   else drawFace(ctx, sheet.face, g, s.fontFamily, stamps)
 
   const bits = canvasToBitImage(canvas)

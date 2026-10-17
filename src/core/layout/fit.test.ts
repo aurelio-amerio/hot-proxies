@@ -5,7 +5,7 @@ import { fit } from './fit'
 import { normalizeScryfall } from '../card/normalize'
 import { DEFAULT_SETTINGS } from '../settings'
 import { standardSheet, type CardData, type Sheet } from '../card/types'
-import { ART_MAX, ART_MID, ART_MIN, TEXT_MIN, TEXT_FLOOR, COL_ART_MAX, GAP, BADGE } from './constants'
+import { ART_MAX, ART_MID, ART_MIN, TEXT_MIN, TEXT_FLOOR, COL_ART_MAX, GAP, BADGE, SPLIT_ART_MAX } from './constants'
 
 const card = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8'))).sheets[0]
 const synthetic = (words: number, extra: Partial<CardData> = {}): CardData => ({
@@ -147,5 +147,23 @@ describe('fit', () => {
     const c = card('bonecrusher') as Extract<Sheet, { kind: 'stacked' }>
     const g = fit({ ...c, face: { ...c.face, oracleText: Array(160).fill('word').join(' ') } }, S, nodeEnv)
     expect(g.art).toBeUndefined(); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN); expect(g.typeBar.y).toBe(g.nameBar.y + g.nameBar.h + GAP)
+  })
+  it('split: Fire // Ice is two halves with the art between them', () => {
+    const g = fit(card('fire-ice'), S, nodeEnv)
+    expect(g.kind).toBe('split'); expect(g.art!.h).toBe(SPLIT_ART_MAX); expect(g.textFontSize).toBe(S.textSize)
+    expect(g.art!.y).toBe(g.textBox.y + g.textBox.h + GAP); expect(g.second!.nameBar.y).toBe(g.art!.y + g.art!.h + GAP)
+    expect(g.second!.textBox.y + g.second!.textBox.h).toBeLessThanOrEqual(536 - 8); expect(g.statBox).toBeUndefined()
+  })
+  it('split: long halves drop the art before text goes below 14 px', () => {
+    const c = card('fire-ice') as Extract<Sheet, { kind: 'split' }>
+    const long = Array(90).fill('word').join(' ')
+    const g = fit({ kind: 'split', halves: [{ ...c.halves[0], oracleText: long }, { ...c.halves[1], oracleText: long }] }, S, nodeEnv)
+    expect(g.art).toBeUndefined(); expect(g.textFontSize).toBeGreaterThanOrEqual(TEXT_MIN); expect(g.overflow).toBe(false)
+  })
+  it('split: absurd text clips the second half first and flags overflow', () => {
+    const c = card('fire-ice') as Extract<Sheet, { kind: 'split' }>
+    const g = fit({ kind: 'split', halves: [{ ...c.halves[0], oracleText: Array(600).fill('word').join(' ') }, c.halves[1]] }, S, nodeEnv)
+    expect(g.overflow).toBe(true); expect(g.textFontSize).toBe(TEXT_FLOOR); expect(g.second!.lines.length).toBe(1)
+    expect(g.second!.textBox.y + g.second!.textBox.h).toBeLessThanOrEqual(536 - 8)
   })
 })

@@ -8,6 +8,7 @@ import { fitCandidates } from './candidates'
 import { fitNameBar, fitTypeFont, statWidth, lineHeightFor, symbolSizeFor } from './bars'
 import { fitColumns } from './fitColumns'
 import { fitStacked } from './fitStacked'
+import { fitSplit } from './fitSplit'
 import { faceBoxes, wrapBoxText, type FaceBoxes } from './face'
 import { MARGIN, GAP, COST_SYMBOL } from './constants'
 
@@ -33,7 +34,7 @@ export interface Geometry {
 export function fit(sheet: Sheet, s: Settings, env: RenderEnv): Geometry {
   if (sheet.kind === 'columns') return fitColumns(sheet, s, env)
   if (sheet.kind === 'stacked') return fitStacked(sheet, s, env)
-  if (sheet.kind !== 'standard') throw new Error('not implemented')
+  if (sheet.kind === 'split') return fitSplit(sheet, s, env)
   return fitStandard(sheet.face, s, env)
 }
 
