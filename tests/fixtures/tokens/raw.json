@@ -1,0 +1,13 @@
+[
+  {"id":"aaaaaaaa-0000-4000-8000-000000000001","name":"Goblin","layout":"token","set_type":"token","released_at":"2023-01-01","type_line":"Token Creature — Goblin","oracle_text":"Haste","power":"1","toughness":"1"},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000002","name":"Goblin","layout":"token","set_type":"token","released_at":"2024-06-01","type_line":"Token Creature — Goblin","oracle_text":"Haste","power":"1","toughness":"1"},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000003","name":"Goblin","layout":"token","set_type":"token","released_at":"2020-01-01","type_line":"Token Creature — Goblin","power":"1","toughness":"1"},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000004","name":"Goblin // Soldier","layout":"double_faced_token","set_type":"token","released_at":"2022-01-01","card_faces":[
+    {"name":"Goblin","type_line":"Token Creature — Goblin","power":"1","toughness":"1"},
+    {"name":"Soldier","type_line":"Token Creature — Soldier","power":"1","toughness":"1"}]},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000005","name":"The Monarch","layout":"token","set_type":"token","released_at":"2016-11-11","type_line":"Card","oracle_text":"At the beginning of your end step, draw a card.\nWhenever a creature deals combat damage to you, its controller becomes the monarch."},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000006","name":"Emblem — Ajani, Adversary of Tyrants","layout":"emblem","set_type":"token","released_at":"2018-07-13","type_line":"Emblem — Ajani","oracle_text":"At the beginning of your end step, create a 1/1 white Cat creature token with lifelink."},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000007","name":"Goblin // Goblin","layout":"art_series","set_type":"memorabilia","released_at":"2021-01-01","type_line":"Card // Card"},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000008","name":"Poison Counter","layout":"token","set_type":"token","released_at":"2023-02-03","type_line":"Card","oracle_text":""},
+  {"id":"aaaaaaaa-0000-4000-8000-000000000009","name":"Treasure","layout":"token","set_type":"token","released_at":"2023-09-08","type_line":"Token Artifact — Treasure","oracle_text":"{T}, Sacrifice this artifact: Add one mana of any color."}
+]
