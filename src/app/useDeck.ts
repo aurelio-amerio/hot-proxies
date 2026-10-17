@@ -118,7 +118,7 @@ export function useDeck(services: Services, settings: Settings) {
         const d = distinct[i]
         try {
           const card = sheetFaces(normalizeScryfall(await services.client.fetchCard(d.name)).sheets[0])[0]
-          const { art } = await resolveArt(services, card)
+          const [{ art }] = await resolveArt(services, { name: card.name, sheets: [standardSheet(card)] })
           cards.push({ key: d.key, name: card.name, count: d.count, line: d.line, card, art })
         } catch (e) {
           const text = lineText(snapshotText, d.line)

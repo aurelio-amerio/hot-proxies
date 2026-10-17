@@ -13,6 +13,9 @@ import { ensureFonts } from './browserEnv'
 import { fontFallbackMessage } from './fontFallback'
 import { resolveArt } from './resolveArt'
 
+/** Temporary single-sheet adapter until the hook is rewritten for ProxyCard. */
+const resolveCardArt = async (services: Services, face: CardData) => (await resolveArt(services, { name: face.name, sheets: [standardSheet(face)] }))[0]
+
 export type ProxyState = 'idle' | 'loading' | 'rendered' | 'error'
 export const PRINTS_ERROR = 'Could not load other printings.'
 
@@ -38,7 +41,7 @@ export function useProxy(services: Services, settings: Settings) {
     setState('loading'); setErrors([]); setPrints(null); setPrintsError(null)
     try {
       const c = sheetFaces(normalizeScryfall(await services.client.fetchCard(name)).sheets[0])[0]
-      const r = await resolveArt(services, c)
+      const r = await resolveCardArt(services, c)
       if (my !== seq.current) return
       setCard(c); setArt(r.art); setArtFailed(r.failed); setArtRef(getPreferredArt(services.storage, c.name)); setState('rendered')
     } catch (e) {
@@ -54,7 +57,7 @@ export function useProxy(services: Services, settings: Settings) {
     setPreferredArt(services.storage, card.name, ref)
     setArtRef(ref)
     const my = ++artSeq.current
-    const r = await resolveArt(services, card)
+    const r = await resolveCardArt(services, card)
     if (my !== artSeq.current) return
     setArt(r.art); setArtFailed(r.failed)
   }, [services, card])
