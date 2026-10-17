@@ -144,8 +144,8 @@ descending. The script prints the counts and writes `public/tokens.json`.
 
 `src/data/tokenIndex.ts` mirrors `nameIndex.ts`: `loadTokenIndex(fetchFn)`
 fetches `${BASE_URL}tokens.json` once, caches the promise, and drops the cache
-on failure. `createTokenMatcher(index)` builds the existing bigram `Matcher`
-over the names, so ranking matches Card mode. `variantsOf(index, name)` returns
+on failure. `tokenNames(index)` feeds the existing `SearchBox`, whose bigram matcher
+ranks the names exactly as in Card mode. `variantsOf(index, name)` returns
 the entry or `undefined`.
 
 ## 5. Token draft (core)
