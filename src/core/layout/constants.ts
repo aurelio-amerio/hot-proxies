@@ -27,9 +27,10 @@ export const BADGE = 22         // chapter / level badge size
 export const BADGE_GUTTER = 28  // width reserved left of the text for badges
 export const SECTION_GAP = 6    // vertical gap between sections
 export const SECTION_RULE = 1   // rule between sections
-// Split sheets (two sub-cards stacked on one face)
+// Stacked sheets (adventure, flip, prototype): the second face's box at the bottom
 export const SUB_PAD = 6
 export const SUB_TYPE_H = 22
+// Split sheets (two halves on one face, art between them)
 export const SPLIT_ART_MAX = 120
 export const SPLIT_ART_MIN = 60
 export const SPLIT_ART_STEP = 10
