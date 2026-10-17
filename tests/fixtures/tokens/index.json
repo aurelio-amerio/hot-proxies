@@ -1,0 +1,11 @@
+{"version":1,"tokens":[
+ {"name":"Goblin","variants":[
+  {"typeLine":"Token Creature — Goblin","oracleText":"Haste","power":"1","toughness":"1","prints":["aaaaaaaa000040008000000000000002","aaaaaaaa000040008000000000000001"]},
+  {"typeLine":"Token Creature — Goblin","oracleText":"","power":"1","toughness":"1","prints":["aaaaaaaa000040008000000000000004","aaaaaaaa000040008000000000000003"]}]},
+ {"name":"Soldier","variants":[
+  {"typeLine":"Token Creature — Soldier","oracleText":"","power":"1","toughness":"1","prints":["aaaaaaaa000040008000000000000004:1"]}]},
+ {"name":"The Monarch","variants":[
+  {"typeLine":"Card","oracleText":"At the beginning of your end step, draw a card.\nWhenever a creature deals combat damage to you, its controller becomes the monarch.","prints":["aaaaaaaa000040008000000000000005"]}]},
+ {"name":"Treasure","variants":[
+  {"typeLine":"Token Artifact — Treasure","oracleText":"{T}, Sacrifice this artifact: Add one mana of any color.","prints":["aaaaaaaa000040008000000000000009"]}]}
+]}
