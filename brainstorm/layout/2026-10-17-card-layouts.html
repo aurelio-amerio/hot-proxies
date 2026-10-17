@@ -1,0 +1,171 @@
+<style>
+  .px { --s: 0.62; }
+  .proxy { position: relative; width: calc(384px * 0.62); height: calc(536px * 0.62); border: 2px solid #111; background: #fff; color: #111; box-sizing: border-box; padding: 5px; display: flex; flex-direction: column; gap: 3px; font-family: Georgia, 'Times New Roman', serif; }
+  .bar { border: 1.5px solid #111; border-radius: 6px; padding: 2px 6px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
+  .bar.name { height: 24px; font-size: 13px; }
+  .bar.type { height: 17px; font-size: 10px; }
+  .pips { display: flex; gap: 2px; }
+  .pip { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #111; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+  .art { border: 1.5px solid #111; background: repeating-linear-gradient(45deg, #333 0 1px, #fff 1px 3px); }
+  .art.dither2 { background: repeating-linear-gradient(135deg, #111 0 1px, #fff 1px 2.5px, #555 2.5px 3.5px, #fff 3.5px 5px); }
+  .text { border: 1.5px solid #111; padding: 4px 5px; font-size: 9.5px; line-height: 1.22; flex: 1; position: relative; overflow: hidden; }
+  .text p { margin: 0 0 4px 0; }
+  .chap { display: flex; gap: 4px; align-items: flex-start; margin-bottom: 5px; }
+  .chap .pip { flex: none; width: 15px; height: 15px; font-size: 8.5px; margin-top: 1px; }
+  .lvl { border-top: 1.5px solid #111; margin: 4px -5px 3px -5px; padding: 3px 5px 0 5px; font-weight: bold; font-size: 9px; display: flex; justify-content: space-between; }
+  .lvl:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+  .cols { display: flex; gap: 3px; flex: 1; min-height: 0; }
+  .cols .text { flex: 1; }
+  .cols .art { width: 36%; }
+  .stat { position: absolute; right: -1.5px; bottom: -1.5px; border: 1.5px solid #111; background: #fff; padding: 2px 6px; font-weight: bold; font-size: 12px; border-radius: 6px 0 0 0; }
+  .sub { border: 1.5px solid #111; padding: 3px 5px; font-size: 9px; line-height: 1.2; }
+  .sub .hdr { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px; }
+  .strip { display: flex; flex-direction: column; align-items: center; gap: 0; background: #f4f1ea; padding: 10px; border-radius: 4px; }
+  .strip .proxy { border-color: #111; }
+  .fold { width: calc(384px * 0.62); height: 14px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #666; position: relative; }
+  .fold::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.5px dashed #999; }
+  .fold span { background: #f4f1ea; padding: 0 6px; position: relative; }
+  .flip { transform: rotate(180deg); }
+  .row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+  .fig { display: flex; flex-direction: column; gap: 0.4rem; align-items: center; }
+  .fig .cap { font-size: 0.8rem; color: var(--text-secondary); max-width: 240px; text-align: center; }
+  .note { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.4rem; }
+</style>
+
+<h2>Sagas and Classes: which arrangement?</h2>
+<p class="subtitle">Wireframes at 62 % of print size (real card is 384 × 536 dots). Hatched boxes are dithered art. Click an option to pick it.</p>
+
+<div class="section row">
+  <div class="fig">
+    <div class="proxy">
+      <div class="bar name"><span>History of Benalia</span><div class="pips"><span class="pip">1</span><span class="pip">W</span><span class="pip">W</span></div></div>
+      <div class="cols">
+        <div class="text">
+          <div class="chap"><span class="pip">I</span><span>Create a 2/2 white Knight creature token with vigilance.</span></div>
+          <div class="chap"><span class="pip">II</span><span>Create a 2/2 white Knight creature token with vigilance.</span></div>
+          <div class="chap"><span class="pip">III</span><span>Knights you control get +2/+1 until end of turn.</span></div>
+        </div>
+        <div class="art dither2"></div>
+      </div>
+      <div class="bar type"><span>Legendary Enchantment — Saga</span></div>
+    </div>
+    <div class="cap">A · Saga, side columns: chapters left, art right (echoes the real card). Art column ≈ 140 dots wide.</div>
+  </div>
+
+  <div class="fig">
+    <div class="proxy">
+      <div class="bar name"><span>Ranger Class</span><div class="pips"><span class="pip">1</span><span class="pip">G</span></div></div>
+      <div class="cols">
+        <div class="text">
+          <div class="lvl"><span>Level 1</span></div>
+          <p>When Ranger Class enters, create a 2/2 green Wolf creature token.</p>
+          <div class="lvl"><span>Level 2</span><span class="pips"><span class="pip">1</span><span class="pip">G</span></span></div>
+          <p>Whenever you attack, put a +1/+1 counter on target attacking creature.</p>
+          <div class="lvl"><span>Level 3</span><span class="pips"><span class="pip">3</span><span class="pip">G</span></span></div>
+          <p>You may look at the top card of your library any time. You may cast creature spells from the top of your library.</p>
+        </div>
+        <div class="art dither2"></div>
+      </div>
+      <div class="bar type"><span>Enchantment — Class</span></div>
+    </div>
+    <div class="cap">A · Class with the same columns: level headers with their cost, art right. The art column shrinks or is dropped before text goes below 14 px.</div>
+  </div>
+
+  <div class="fig">
+    <div class="proxy">
+      <div class="bar name"><span>History of Benalia</span><div class="pips"><span class="pip">1</span><span class="pip">W</span><span class="pip">W</span></div></div>
+      <div class="art dither2" style="height: 90px;"></div>
+      <div class="bar type"><span>Legendary Enchantment — Saga</span></div>
+      <div class="text">
+        <div class="chap"><span class="pip">I</span><span>Create a 2/2 white Knight creature token with vigilance.</span></div>
+        <div class="chap"><span class="pip">II</span><span>Create a 2/2 white Knight creature token with vigilance.</span></div>
+        <div class="chap"><span class="pip">III</span><span>Knights you control get +2/+1 until end of turn.</span></div>
+      </div>
+    </div>
+    <div class="cap">B · Standard top-art layout, chapter / level markers drawn inline in the text box. No new geometry, only new text markers.</div>
+  </div>
+</div>
+
+<div class="options" style="margin-bottom: 2.5rem;">
+  <div class="option" data-choice="saga-columns" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Side columns</h3><p>Text left, art right, type bar at the bottom like the real card. New geometry, but wider art-to-text trade-offs on long sagas.</p></div>
+  </div>
+  <div class="option" data-choice="saga-standard" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Standard layout with markers</h3><p>Reuse the existing fit. Chapter and level markers are the only new drawing. Loses the distinctive saga silhouette.</p></div>
+  </div>
+</div>
+
+<h2>Adventure, Split, Flip: one proxy or a fold pair?</h2>
+<p class="subtitle">These have two faces on the same side of the real card. Transform / MDFC / meld / battle are already decided: fold pair, back face rotated 180°.</p>
+
+<div class="section row">
+  <div class="fig">
+    <div class="proxy">
+      <div class="bar name"><span>Bonecrusher Giant</span><div class="pips"><span class="pip">2</span><span class="pip">R</span></div></div>
+      <div class="art dither2" style="height: 70px;"></div>
+      <div class="bar type"><span>Creature — Giant</span></div>
+      <div class="text">
+        <p>Whenever Bonecrusher Giant becomes the target of a spell, Bonecrusher Giant deals 2 damage to that spell's controller.</p>
+        <div class="stat">4/3</div>
+      </div>
+      <div class="sub">
+        <div class="hdr"><span>Stomp</span><div class="pips"><span class="pip">1</span><span class="pip">R</span></div></div>
+        <div style="font-size:8.5px;margin-bottom:2px;"><b>Instant — Adventure</b></div>
+        Damage can't be prevented this turn. Stomp deals 2 damage to any target.
+      </div>
+    </div>
+    <div class="cap">C · Adventure stacked: the adventure half is a sub-box under the main text.</div>
+  </div>
+
+  <div class="fig">
+    <div class="proxy">
+      <div class="bar name"><span>Fire</span><div class="pips"><span class="pip">1</span><span class="pip">R</span></div></div>
+      <div class="bar type"><span>Instant</span></div>
+      <div class="text" style="flex:0 0 auto; height: 52px;">Fire deals 2 damage divided as you choose among one or two targets.</div>
+      <div class="art dither2" style="height: 60px;"></div>
+      <div class="bar name"><span>Ice</span><div class="pips"><span class="pip">1</span><span class="pip">U</span></div></div>
+      <div class="bar type"><span>Instant</span></div>
+      <div class="text">Tap target permanent.<br>Draw a card.</div>
+    </div>
+    <div class="cap">C · Split stacked: two half-cards, art shared between them (or dropped when text needs the room).</div>
+  </div>
+
+  <div class="fig">
+    <div class="strip">
+      <div class="proxy">
+        <div class="bar name"><span>Bonecrusher Giant</span><div class="pips"><span class="pip">2</span><span class="pip">R</span></div></div>
+        <div class="art dither2" style="height: 110px;"></div>
+        <div class="bar type"><span>Creature — Giant</span></div>
+        <div class="text">
+          <p>Whenever Bonecrusher Giant becomes the target of a spell, Bonecrusher Giant deals 2 damage to that spell's controller.</p>
+          <div class="stat">4/3</div>
+        </div>
+      </div>
+      <div class="fold"><span>fold</span></div>
+      <div class="proxy flip">
+        <div class="bar name"><span>Stomp</span><div class="pips"><span class="pip">1</span><span class="pip">R</span></div></div>
+        <div class="art dither2" style="height: 110px;"></div>
+        <div class="bar type"><span>Instant — Adventure</span></div>
+        <div class="text"><p>Damage can't be prevented this turn. Stomp deals 2 damage to any target.</p></div>
+      </div>
+    </div>
+    <div class="cap">D · Fold pair: each half is a full normal card, second one printed upside down. Same mechanism as transform cards.</div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="twoface-stacked" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>One proxy, stacked</h3><p>Matches how the real card is read at the table: both halves visible at once. Tightest fit; split cards likely lose their art.</p></div>
+  </div>
+  <div class="option" data-choice="twoface-fold" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content"><h3>Fold pair, like transform cards</h3><p>One rule for every multi-face layout, every face gets the full normal geometry. You flip the proxy to read the other half.</p></div>
+  </div>
+  <div class="option" data-choice="twoface-mixed" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content"><h3>Mixed</h3><p>Adventure stacked (it is one creature with a rider), split and flip as a fold pair. Tell me in the terminal if you want a different mix.</p></div>
+  </div>
+</div>
