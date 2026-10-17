@@ -6,7 +6,7 @@ import { createRun, toggleCard as toggleRun, nextPending, markPrinted, progress,
 import { normalizeScryfall } from '../core/card/normalize'
 import { CardNotFound, NetworkError, UnsupportedLayout } from '../core/errors'
 import { createMatcher, type Matcher } from '../data/fuzzy'
-import type { BitImage, GreyImage } from '../core/art/types'
+import type { BitImage } from '../core/art/types'
 import { renderProxy } from '../core/render/renderProxy'
 import { ensureFonts } from './browserEnv'
 import { toPacked } from '../core/output/packed'
@@ -14,6 +14,7 @@ import { escposInit, escposRasterFrames, escposFeed } from '../core/output/escpo
 import { FEED_LINES_AFTER, FEED_LINES_BETWEEN_CARDS } from '../core/printer'
 import { printJob, type PrinterState } from '../core/printer/transport'
 import { PRINTER_MESSAGES } from './usePrinter'
+import { resolveArt } from './resolveArt'
 
 export interface DeckThumb { bits: BitImage; overflow: boolean; artMissing: boolean }
 
@@ -115,8 +116,7 @@ export function useDeck(services: Services, settings: Settings) {
         const d = distinct[i]
         try {
           const card = normalizeScryfall(await services.client.fetchCard(d.name))
-          let art: GreyImage | null = null
-          if (card.artUrl) { try { art = await services.decodeArt(await services.client.fetchArtBlob(card.artUrl)) } catch { art = null } }
+          const { art } = await resolveArt(services, card)
           cards.push({ key: d.key, name: card.name, count: d.count, line: d.line, card, art })
         } catch (e) {
           const text = lineText(snapshotText, d.line)

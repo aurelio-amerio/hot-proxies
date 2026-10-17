@@ -4,7 +4,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useDeck, DECK_TEXT_KEY } from './useDeck'
 import { DEFAULT_SETTINGS } from '../core/settings'
 import { NetworkError } from '../core/errors'
-import { fakeServices, memoryStorage } from '../../tests/fakeServices'
+import { fakeServices, memoryStorage, FAKE_GREY } from '../../tests/fakeServices'
+import { setPreferredArt } from '../core/art/preference'
 import { fakePrinter } from '../../tests/fakePrinter'
 import { encodeEscPosFrames } from '../core/output/escpos'
 import { toPacked } from '../core/output/packed'
@@ -307,5 +308,20 @@ describe('useDeck print', () => {
     act(() => result.current.toggleCard('forest'))
     expect(result.current.run!.excluded.has('forest')).toBe(false)
     await act(async () => { release(); await p })
+  })
+})
+
+describe('useDeck art preference', () => {
+  it('fetches the remembered printing for a card during verify', async () => {
+    const storage = memoryStorage(); setPreferredArt(storage, 'Lightning Bolt', 'ref1')
+    const fetchArtById = vi.fn(async () => new Blob([new Uint8Array([1])]))
+    const { result } = hook(fakeServices({ storage, fetchArtById, decodeArt: async () => FAKE_GREY }))
+    act(() => result.current.setText('1 Lightning Bolt\n1 Forest'))
+    await act(() => result.current.verify())
+    await waitFor(() => expect(result.current.state).toBe('ready'))
+    expect(fetchArtById).toHaveBeenCalledTimes(1)
+    expect(fetchArtById).toHaveBeenCalledWith('ref1')
+    expect(result.current.run!.cards.find((c) => c.name === 'Lightning Bolt')!.art).toBe(FAKE_GREY)
+    expect(result.current.run!.cards.find((c) => c.name === 'Forest')!.art).toBeNull()
   })
 })
