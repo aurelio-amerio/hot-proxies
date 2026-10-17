@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createScryfallClient, memoryKeyValue } from './scryfall'
+import { createScryfallClient, memoryKeyValue, PRINTS_PAGE_CAP } from './scryfall'
 import { CardNotFound, NetworkError, ArtUnavailable } from '../core/errors'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -65,5 +65,63 @@ describe('fetchArtBlob', () => {
   it('throws ArtUnavailable on failure', async () => {
     const { client } = setup([new Response('', { status: 404 })])
     await expect(client.fetchArtBlob('https://cards.scryfall.io/art_crop/x.jpg')).rejects.toBeInstanceOf(ArtUnavailable)
+  })
+})
+
+describe('fetchPrints', () => {
+  const ID1 = 'aaaaaaaa-0000-4000-8000-000000000001', ID2 = 'aaaaaaaa-0000-4000-8000-000000000002', ID3 = 'aaaaaaaa-0000-4000-8000-000000000003'
+  const print = (id: string, set: string, released: string, art?: string, faces?: unknown[]) =>
+    ({ id, set, released_at: released, ...(art ? { image_uris: { art_crop: art } } : {}), ...(faces ? { card_faces: faces } : {}) })
+  it('encodes the exact-name query, follows pages, keeps only printings with front art, and caches', async () => {
+    const { client, calls, fetchFn } = setup([
+      json({ data: [print(ID1, 'lea', '1993-08-05', 'https://c/1.jpg'), print(ID2, 'xxx', '2000-01-01')], has_more: true, next_page: 'https://api.scryfall.com/cards/search?page=2' }),
+      json({ data: [print(ID3, 'm10', '2009-07-17', undefined, [{ image_uris: { art_crop: 'https://c/3.jpg' } }])], has_more: false }),
+    ])
+    const prints = await client.fetchPrints("Smuggler's Copter")
+    expect(calls[0]).toBe("https://api.scryfall.com/cards/search?q=!%22Smuggler's%20Copter%22&unique=prints&order=released&dir=desc")
+    expect(calls[1]).toBe('https://api.scryfall.com/cards/search?page=2')
+    expect(prints).toEqual([
+      { ref: 'aaaaaaaa000040008000000000000001', artUrl: 'https://c/1.jpg', set: 'lea', released: '1993-08-05' },
+      { ref: 'aaaaaaaa000040008000000000000003', artUrl: 'https://c/3.jpg', set: 'm10', released: '2009-07-17' },
+    ])
+    await client.fetchPrints("Smuggler's Copter")
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+  })
+  it('stops after PRINTS_PAGE_CAP pages', async () => {
+    const page = (n: number) => json({ data: [print(`aaaaaaaa-0000-4000-8000-00000000000${n}`, 's', '2000-01-01', 'https://c/x.jpg')], has_more: true, next_page: `https://api.scryfall.com/cards/search?page=${n + 1}` })
+    const { client, fetchFn } = setup([page(1), page(2), page(3), page(4), page(5), page(6), page(7)])
+    const prints = await client.fetchPrints('Forest')
+    expect(prints).toHaveLength(PRINTS_PAGE_CAP)
+    expect(fetchFn).toHaveBeenCalledTimes(PRINTS_PAGE_CAP)
+  })
+  it('returns an empty list on 404 and NetworkError otherwise', async () => {
+    expect(await setup([json({ object: 'error' }, 404)]).client.fetchPrints('Nope')).toEqual([])
+    await expect(setup([json({}, 500)]).client.fetchPrints('Forest')).rejects.toBeInstanceOf(NetworkError)
+  })
+})
+
+describe('fetchArtById', () => {
+  const HEX = 'aaaaaaaa000040008000000000000004', UUID = 'aaaaaaaa-0000-4000-8000-000000000004'
+  const blob = () => new Response(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }), { status: 200 })
+  it('fetches the direct CDN url and caches by ref', async () => {
+    const { client, calls, fetchFn } = setup([blob()])
+    const a = await client.fetchArtById(HEX); const b = await client.fetchArtById(HEX)
+    expect(calls[0]).toBe(`https://cards.scryfall.io/art_crop/front/a/a/${UUID}.jpg`)
+    expect(a.size).toBe(3); expect(b.size).toBe(3); expect(fetchFn).toHaveBeenCalledTimes(1)
+  })
+  it('falls back to the card JSON when the direct url is 404, using the requested face', async () => {
+    const { client, calls } = setup([
+      new Response('', { status: 404 }),
+      json({ id: UUID, card_faces: [{ image_uris: { art_crop: 'https://c/front.jpg' } }, { image_uris: { art_crop: 'https://c/back.jpg?123' } }] }),
+      blob(),
+    ])
+    await client.fetchArtById(`${HEX}:1`)
+    expect(calls).toEqual([`https://cards.scryfall.io/art_crop/back/a/a/${UUID}.jpg`, `https://api.scryfall.com/cards/${UUID}`, 'https://c/back.jpg?123'])
+  })
+  it('throws ArtUnavailable for a bad ref, a failed fallback or a missing art crop', async () => {
+    await expect(setup([]).client.fetchArtById('nope')).rejects.toBeInstanceOf(ArtUnavailable)
+    await expect(setup([new Response('', { status: 404 }), json({}, 500)]).client.fetchArtById(HEX)).rejects.toBeInstanceOf(ArtUnavailable)
+    await expect(setup([new Response('', { status: 404 }), json({ id: UUID })]).client.fetchArtById(HEX)).rejects.toBeInstanceOf(ArtUnavailable)
+    await expect(setup([new TypeError('Failed to fetch')]).client.fetchArtById(HEX)).rejects.toBeInstanceOf(ArtUnavailable)
   })
 })
