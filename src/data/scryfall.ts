@@ -107,7 +107,7 @@ export function createScryfallClient(o: ScryfallOptions): ScryfallClient {
       const hit = await o.cache.get<Printing[]>(key)
       if (hit) return hit
       const out: Printing[] = []
-      let url: string | undefined = `${API}/cards/search?q=${encodeURIComponent(`!"${name}"`)}&unique=prints&order=released&dir=desc`
+      let url: string | undefined = `${API}/cards/search?q=${encodeURIComponent(`!"${name.replace(/"/g, '\\"')}"`)}&unique=prints&order=released&dir=desc`
       for (let page = 0; url && page < PRINTS_PAGE_CAP; page++) {
         const res = await request(url)
         if (res.status === 404) break

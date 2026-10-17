@@ -87,6 +87,11 @@ describe('fetchPrints', () => {
     await client.fetchPrints("Smuggler's Copter")
     expect(fetchFn).toHaveBeenCalledTimes(2)
   })
+  it('escapes double quotes inside the name', async () => {
+    const { client, calls } = setup([json({ data: [], has_more: false })])
+    await client.fetchPrints('Kongming, "Sleeping Dragon"')
+    expect(calls[0]).toBe('https://api.scryfall.com/cards/search?q=!%22Kongming%2C%20%5C%22Sleeping%20Dragon%5C%22%22&unique=prints&order=released&dir=desc')
+  })
   it('stops after PRINTS_PAGE_CAP pages', async () => {
     const page = (n: number) => json({ data: [print(`aaaaaaaa-0000-4000-8000-00000000000${n}`, 's', '2000-01-01', 'https://c/x.jpg')], has_more: true, next_page: `https://api.scryfall.com/cards/search?page=${n + 1}` })
     const { client, fetchFn } = setup([page(1), page(2), page(3), page(4), page(5), page(6), page(7)])
