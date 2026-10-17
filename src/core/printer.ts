@@ -13,3 +13,5 @@ export const FEED_LINES_AFTER = 2
 export const BLE_CHUNK_BYTES = 100
 /** Lines fed between cards in a deck run (`ESC d n`) so the cards can be cut apart. Starts at FEED_LINES_AFTER's value; tuned in Task 2 of the deck-printing plan. */
 export const FEED_LINES_BETWEEN_CARDS = 2
+/** Rows of the dashed fold guide printed between the two sheets of a fold pair. */
+export const FOLD_GUIDE_ROWS = 16

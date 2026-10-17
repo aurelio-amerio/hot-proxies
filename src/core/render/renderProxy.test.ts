@@ -5,7 +5,7 @@ import { nodeEnv, canvasToPng } from '../../../tests/nodeEnv'
 import { loadArt } from '../../../tests/loadArt'
 import { standardSheet } from '../card/types'
 import { renderProxy } from './renderProxy'
-import { normalizeScryfall } from '../card/normalize'
+import { normalizeScryfall, attachMeldBack } from '../card/normalize'
 import { DEFAULT_SETTINGS } from '../settings'
 import { bitImageToImageData, toPacked } from '../output/packed'
 import type { BitImage } from '../art/types'
@@ -93,6 +93,25 @@ describe('renderProxy', () => {
     expect(geometry.kind).toBe('columns'); expect(geometry.overflow).toBe(false)
     await expectGolden('saga-kami-war-front', bits)
   })
+  const sheetsOf = (n: string) => normalizeScryfall(JSON.parse(readFileSync(`tests/fixtures/cards/${n}.json`, 'utf8'))).sheets
+  const meldSheets = attachMeldBack(
+    normalizeScryfall(JSON.parse(readFileSync('tests/fixtures/cards/hanweir-battlements.json', 'utf8'))),
+    JSON.parse(readFileSync('tests/fixtures/cards/hanweir-township.json', 'utf8')),
+  ).sheets
+  for (const [golden, sheets, i, artName] of [
+    ['transform-delver-front', sheetsOf('delver'), 0, 'bolt'], ['transform-delver-back', sheetsOf('delver'), 1, 'rotpriest'],
+    ['mdfc-valki-front', sheetsOf('valki'), 0, null], ['mdfc-valki-back', sheetsOf('valki'), 1, null],
+    ['battle-gobakhan-front', sheetsOf('gobakhan'), 0, null], ['battle-gobakhan-back', sheetsOf('gobakhan'), 1, null],
+    ['meld-battlements-front', meldSheets, 0, null], ['meld-battlements-back', meldSheets, 1, null],
+    ['saga-kami-war-back', sheetsOf('kami-war'), 1, null],
+  ] as const) {
+    it(`renders ${golden} (fold pair sheet) identically to the golden image`, async () => {
+      const art = artName ? await loadArt(`tests/fixtures/art/${artName}.jpg`) : null
+      const { bits, geometry } = renderProxy(sheets[i]!, art, DEFAULT_SETTINGS, nodeEnv)
+      expect(geometry.overflow).toBe(false)
+      await expectGolden(golden, bits)
+    })
+  }
   it('renders a noncreature token (no cost, no stat) identically to the golden image', async () => {
     const { bits, geometry } = renderProxy(standardSheet(tokenCard('Treasure')), null, DEFAULT_SETTINGS, nodeEnv)
     expect(geometry.costOnSecondLine).toBe(false)
