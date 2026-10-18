@@ -71,9 +71,9 @@ export function App({ services }: { services: Services }) {
             ))}
             {state === 'idle' && <Typography color="text.secondary">Type a card name to render a proxy.</Typography>}
             {state === 'rendered' && card && renders.length > 0 && (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { xs: 'center', sm: 'flex-start' }, justifyContent: 'center' }}>
+              <Stack spacing={2} sx={{ alignItems: 'center' }}>
                 {renders.map((r, i) => (
-                  <Stack key={i} spacing={0.5} sx={{ alignItems: 'center', minWidth: 0, width: '100%', flex: { sm: '1 1 0' } }}>
+                  <Stack key={i} spacing={0.5} sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}>
                     {renders.length > 1 && <Typography variant="caption" color="text.secondary">{i === 0 ? 'Front' : 'Back'}</Typography>}
                     <EditablePreview bits={r.bits} geometry={r.geometry} dotsPerLine={settings.dotsPerLine} dpi={settings.dpi}
                       enabled={i === 0 ? ['art'] : []} disabled={printer.state === 'printing'}
